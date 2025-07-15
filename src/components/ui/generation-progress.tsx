@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Progress } from './progress'
 import { cn } from '@/lib/utils'
-import { GenerationProgress } from '@/lib/ai/request-handler'
+import type { GenerationProgress } from '@/lib/ai/request-handler'
 
 interface GenerationProgressProps {
   progress: GenerationProgress

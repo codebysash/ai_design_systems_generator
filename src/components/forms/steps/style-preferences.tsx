@@ -57,7 +57,7 @@ export function StylePreferences({ form, errors }: StylePreferencesProps) {
 
       <RadioGroup
         value={selectedStyle}
-        onValueChange={(value) => setValue('style', value as any)}
+        onValueChange={(value: string) => setValue('style', value as any)}
         className="grid gap-4 md:grid-cols-2"
       >
         {styleOptions.map((option) => (
