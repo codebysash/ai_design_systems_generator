@@ -2,13 +2,29 @@ import { z } from 'zod'
 
 // Schema for design system response validation
 const ColorSchema = z.object({
-  primary: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
-  secondary: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
-  accent: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
-  background: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
-  foreground: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
-  muted: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color').optional(),
-  border: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color').optional(),
+  primary: z
+    .string()
+    .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
+  secondary: z
+    .string()
+    .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
+  accent: z
+    .string()
+    .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
+  background: z
+    .string()
+    .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
+  foreground: z
+    .string()
+    .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color'),
+  muted: z
+    .string()
+    .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color')
+    .optional(),
+  border: z
+    .string()
+    .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, 'Invalid hex color')
+    .optional(),
 })
 
 const TypographyScaleSchema = z.object({
@@ -29,7 +45,9 @@ const TypographySchema = z.object({
 
 const SpacingSchema = z.object({
   unit: z.number().min(1, 'Spacing unit must be positive'),
-  scale: z.array(z.number()).min(5, 'Spacing scale must have at least 5 values'),
+  scale: z
+    .array(z.number())
+    .min(5, 'Spacing scale must have at least 5 values'),
 })
 
 const BorderRadiusSchema = z.object({
@@ -39,11 +57,13 @@ const BorderRadiusSchema = z.object({
   xl: z.string().optional(),
 })
 
-const ShadowsSchema = z.object({
-  sm: z.string(),
-  md: z.string(),
-  lg: z.string(),
-}).optional()
+const ShadowsSchema = z
+  .object({
+    sm: z.string(),
+    md: z.string(),
+    lg: z.string(),
+  })
+  .optional()
 
 const ComponentSchema = z.object({
   name: z.string().min(1, 'Component name is required'),
@@ -64,7 +84,9 @@ const DesignSystemSchema = z.object({
 
 const AIResponseSchema = z.object({
   designSystem: DesignSystemSchema,
-  components: z.array(ComponentSchema).min(1, 'At least one component is required'),
+  components: z
+    .array(ComponentSchema)
+    .min(1, 'At least one component is required'),
 })
 
 export interface ValidationResult {
@@ -86,13 +108,13 @@ export function parseAIResponse(content: string): ResponseParseResult {
   const result: ResponseParseResult = {
     success: false,
     errors: [],
-    rawContent: content
+    rawContent: content,
   }
 
   try {
     // Multiple strategies to extract JSON from AI response
-    let jsonString = extractJsonFromResponse(content)
-    
+    const jsonString = extractJsonFromResponse(content)
+
     if (!jsonString) {
       result.errors.push('No valid JSON found in AI response')
       return result
@@ -110,7 +132,9 @@ export function parseAIResponse(content: string): ResponseParseResult {
     if (error instanceof SyntaxError) {
       result.errors.push(`JSON parsing error: ${error.message}`)
     } else {
-      result.errors.push(`Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      result.errors.push(
+        `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
     return result
   }
@@ -120,13 +144,13 @@ export function validateDesignSystemResponse(data: any): ValidationResult {
   const result: ValidationResult = {
     isValid: false,
     errors: [],
-    warnings: []
+    warnings: [],
   }
 
   try {
     // Validate using Zod schema
     const validatedData = AIResponseSchema.parse(data)
-    
+
     result.isValid = true
     result.data = validatedData
 
@@ -136,11 +160,13 @@ export function validateDesignSystemResponse(data: any): ValidationResult {
     return result
   } catch (error) {
     if (error instanceof z.ZodError) {
-      result.errors = error.errors.map(err => 
-        `${err.path.join('.')}: ${err.message}`
+      result.errors = error.errors.map(
+        err => `${err.path.join('.')}: ${err.message}`
       )
     } else {
-      result.errors.push(`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      result.errors.push(
+        `Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
     return result
   }
@@ -167,7 +193,7 @@ function extractJsonFromResponse(content: string): string | null {
   const keywordPatterns = [
     /(?:here's|here is) (?:the|your) (?:json|design system):?\s*(\{[\s\S]*?\})/i,
     /(?:result|response|output):?\s*(\{[\s\S]*?\})/i,
-    /```\s*(\{[\s\S]*?\})\s*$/i
+    /```\s*(\{[\s\S]*?\})\s*$/i,
   ]
 
   for (const pattern of keywordPatterns) {
@@ -190,18 +216,27 @@ function isBalancedBraces(str: string): boolean {
   return count === 0
 }
 
-function performQualityChecks(data: z.infer<typeof AIResponseSchema>, result: ValidationResult): void {
+function performQualityChecks(
+  data: z.infer<typeof AIResponseSchema>,
+  result: ValidationResult
+): void {
   const { designSystem, components } = data
 
   // Check color contrast (basic check)
   const { colors } = designSystem
   if (colors.primary === colors.background) {
-    result.warnings.push('Primary color is the same as background color - may cause contrast issues')
+    result.warnings.push(
+      'Primary color is the same as background color - may cause contrast issues'
+    )
   }
 
   // Check font combinations
-  if (designSystem.typography.headingFont === designSystem.typography.bodyFont) {
-    result.warnings.push('Heading and body fonts are the same - consider using different fonts for better hierarchy')
+  if (
+    designSystem.typography.headingFont === designSystem.typography.bodyFont
+  ) {
+    result.warnings.push(
+      'Heading and body fonts are the same - consider using different fonts for better hierarchy'
+    )
   }
 
   // Check spacing scale progression
@@ -218,18 +253,24 @@ function performQualityChecks(data: z.infer<typeof AIResponseSchema>, result: Va
   // Check component coverage
   const componentNames = components.map(c => c.name.toLowerCase())
   const essentialComponents = ['button', 'input', 'card']
-  const missingEssentials = essentialComponents.filter(name => 
-    !componentNames.some(compName => compName.includes(name))
+  const missingEssentials = essentialComponents.filter(
+    name => !componentNames.some(compName => compName.includes(name))
   )
-  
+
   if (missingEssentials.length > 0) {
-    result.warnings.push(`Missing essential components: ${missingEssentials.join(', ')}`)
+    result.warnings.push(
+      `Missing essential components: ${missingEssentials.join(', ')}`
+    )
   }
 
   // Check for duplicate component names
-  const duplicates = componentNames.filter((name, index) => componentNames.indexOf(name) !== index)
+  const duplicates = componentNames.filter(
+    (name, index) => componentNames.indexOf(name) !== index
+  )
   if (duplicates.length > 0) {
-    result.errors.push(`Duplicate component names found: ${duplicates.join(', ')}`)
+    result.errors.push(
+      `Duplicate component names found: ${duplicates.join(', ')}`
+    )
     result.isValid = false
   }
 }
@@ -237,7 +278,7 @@ function performQualityChecks(data: z.infer<typeof AIResponseSchema>, result: Va
 export function sanitizeResponse(data: any): any {
   // Remove any potentially dangerous content
   const sanitized = JSON.parse(JSON.stringify(data))
-  
+
   // Remove any script tags or potentially dangerous content from strings
   function sanitizeString(str: string): string {
     return str
@@ -269,7 +310,7 @@ export function handleResponseErrors(content: string): string[] {
   const issues: string[] = []
 
   // Check for common AI response issues
-  if (content.includes('I cannot') || content.includes('I\'m unable to')) {
+  if (content.includes('I cannot') || content.includes("I'm unable to")) {
     issues.push('AI refused to generate content - try rephrasing your request')
   }
 

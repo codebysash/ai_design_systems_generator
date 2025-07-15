@@ -1,11 +1,10 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { 
+import {
   generateDesignSystem,
   GenerationProgress,
-  GenerationRequest,
-  getGenerationResult
+  getGenerationResult,
 } from '@/lib/ai/request-handler'
 import { DesignSystemFormData } from '@/lib/validations'
 
@@ -16,12 +15,12 @@ interface UseGenerationReturn {
   progress: GenerationProgress | null
   result: any | null
   error: string | null
-  
+
   // Actions
   startGeneration: (formData: DesignSystemFormData) => Promise<void>
   retry: () => Promise<void>
   reset: () => void
-  
+
   // Computed values
   isCompleted: boolean
   isFailed: boolean
@@ -33,38 +32,48 @@ export function useGeneration(): UseGenerationReturn {
   const [progress, setProgress] = useState<GenerationProgress | null>(null)
   const [result, setResult] = useState<any | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [lastFormData, setLastFormData] = useState<DesignSystemFormData | null>(null)
+  const [lastFormData, setLastFormData] = useState<DesignSystemFormData | null>(
+    null
+  )
 
-  const startGeneration = useCallback(async (formData: DesignSystemFormData) => {
-    try {
-      // Reset previous state
-      setError(null)
-      setResult(null)
-      setProgress(null)
-      
-      // Store form data for potential retry
-      setLastFormData(formData)
-      
-      // Start generation
-      const newRequestId = await generateDesignSystem(formData, (newProgress) => {
-        setProgress(newProgress)
-        
-        // Check for completion
-        const request = getGenerationResult(newRequestId)
-        if (request) {
-          if (request.status === 'completed' && request.result) {
-            setResult(request.result)
-          } else if (request.status === 'failed' && request.error) {
-            setError(request.error)
+  const startGeneration = useCallback(
+    async (requestFormData: DesignSystemFormData) => {
+      try {
+        // Reset previous state
+        setError(null)
+        setResult(null)
+        setProgress(null)
+
+        // Store form data for potential retry
+        setLastFormData(requestFormData)
+
+        // Start generation
+        const newRequestId = await generateDesignSystem(
+          requestFormData,
+          newProgress => {
+            setProgress(newProgress)
+
+            // Check for completion
+            const request = getGenerationResult(newRequestId)
+            if (request) {
+              if (request.status === 'completed' && request.result) {
+                setResult(request.result)
+              } else if (request.status === 'failed' && request.error) {
+                setError(request.error)
+              }
+            }
           }
-        }
-      })
-      
-      setRequestId(newRequestId)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start generation')
-    }
-  }, [])
+        )
+
+        setRequestId(newRequestId)
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to start generation'
+        )
+      }
+    },
+    []
+  )
 
   const retry = useCallback(async () => {
     if (!lastFormData) {
@@ -94,15 +103,15 @@ export function useGeneration(): UseGenerationReturn {
     progress,
     result,
     error,
-    
+
     // Actions
     startGeneration,
     retry,
     reset,
-    
+
     // Computed values
     isCompleted,
     isFailed,
-    canRetry
+    canRetry,
   }
 }

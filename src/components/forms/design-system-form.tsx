@@ -9,7 +9,10 @@ import { BasicInfo } from './steps/basic-info'
 import { StylePreferences } from './steps/style-preferences'
 import { ColorSelection } from './steps/color-selection'
 import { IndustrySelection } from './steps/industry-selection'
-import { designSystemSchema, type DesignSystemFormData } from '@/lib/validations'
+import {
+  designSystemSchema,
+  type DesignSystemFormData,
+} from '@/lib/validations'
 import { cn } from '@/lib/utils'
 
 const steps = [
@@ -24,7 +27,10 @@ interface DesignSystemFormProps {
   isLoading?: boolean
 }
 
-export function DesignSystemForm({ onSubmit, isLoading }: DesignSystemFormProps) {
+export function DesignSystemForm({
+  onSubmit,
+  isLoading,
+}: DesignSystemFormProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [direction, setDirection] = useState(0)
 
@@ -40,12 +46,16 @@ export function DesignSystemForm({ onSubmit, isLoading }: DesignSystemFormProps)
     },
   })
 
-  const { handleSubmit, trigger, formState: { errors } } = form
+  const {
+    handleSubmit,
+    trigger,
+    formState: { errors },
+  } = form
 
   const nextStep = async () => {
     const fieldsToValidate = getFieldsForStep(currentStep)
     const isValid = await trigger(fieldsToValidate)
-    
+
     if (isValid && currentStep < steps.length - 1) {
       setDirection(1)
       setCurrentStep(currentStep + 1)
@@ -74,8 +84,8 @@ export function DesignSystemForm({ onSubmit, isLoading }: DesignSystemFormProps)
     }
   }
 
-  const onFormSubmit = (data: DesignSystemFormData) => {
-    onSubmit(data)
+  const onFormSubmit = (formData: DesignSystemFormData) => {
+    onSubmit(formData)
   }
 
   const CurrentStepComponent = steps[currentStep].component
@@ -102,8 +112,12 @@ export function DesignSystemForm({ onSubmit, isLoading }: DesignSystemFormProps)
       {/* Progress indicator */}
       <div className="space-y-4">
         <div className="flex justify-between text-sm text-muted-foreground">
-          <span>Step {currentStep + 1} of {steps.length}</span>
-          <span>{Math.round(((currentStep + 1) / steps.length) * 100)}% complete</span>
+          <span>
+            Step {currentStep + 1} of {steps.length}
+          </span>
+          <span>
+            {Math.round(((currentStep + 1) / steps.length) * 100)}% complete
+          </span>
         </div>
         <div className="flex space-x-2">
           {steps.map((_, index) => (
@@ -131,7 +145,7 @@ export function DesignSystemForm({ onSubmit, isLoading }: DesignSystemFormProps)
               animate="center"
               exit="exit"
               transition={{
-                x: { type: "spring", stiffness: 300, damping: 30 },
+                x: { type: 'spring', stiffness: 300, damping: 30 },
                 opacity: { duration: 0.2 },
               }}
               className="absolute inset-0"
