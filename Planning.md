@@ -2,15 +2,15 @@
 
 ## Development Phases Overview
 
-### Phase 1: Foundation & Core Setup (Weeks 1-3)
+### Phase 1: Foundation & Core Setup
 
 **Goal**: Establish project foundation with basic AI integration and core functionality
 
-### Phase 2: Core Features & Component Generation (Weeks 4-8)
+### Phase 2: Core Features & Component Generation
 
 **Goal**: Implement main design system generation features with comprehensive component library
 
-### Phase 3: Enhancement & Polish (Weeks 9-12)
+### Phase 3: Enhancement & Polish
 
 **Goal**: Add advanced features, optimization, and production readiness
 
@@ -18,7 +18,7 @@
 
 ## Phase 1: Foundation & Core Setup
 
-### Week 1: Project Setup
+### Stage 1: Project Setup
 
 **Milestone**: Development environment ready
 
@@ -45,7 +45,7 @@
 - [ ] Configure Vercel deployment
 - [ ] Set up development scripts and workflows
 
-### Week 2: Basic UI Foundation
+### Stage 2: Basic UI Foundation
 
 **Milestone**: Core application shell functional
 
@@ -73,7 +73,7 @@
 - [ ] Implement base component primitives
 - [ ] Document design decisions
 
-### Week 3: AI Prompt Interface
+### Stage 3: AI Prompt Interface
 
 **Milestone**: Users can input design requirements
 
@@ -97,7 +97,7 @@
 
 ## Phase 2: Core Features & Component Generation
 
-### Week 4-5: Design Token Generation
+### Stage 4: Design Token Generation
 
 **Milestone**: AI generates comprehensive design tokens
 
@@ -125,7 +125,7 @@
 - [ ] Add semantic color mapping
 - [ ] Implement token relationship validation
 
-### Week 6-7: Component Generation Engine
+### Stage 5: Component Generation Engine
 
 **Milestone**: AI generates React components with variants
 
@@ -153,7 +153,7 @@
 - [ ] Verify responsive behavior
 - [ ] Test component interactions
 
-### Week 8: Preview & Export System
+### Stage 6: Preview & Export System
 
 **Milestone**: Users can preview and export generated systems
 
@@ -185,7 +185,7 @@
 
 ## Phase 3: Enhancement & Polish
 
-### Week 9: Advanced Customization
+### Stage 7: Advanced Customization
 
 **Milestone**: Users can refine and customize generated systems
 
@@ -205,7 +205,7 @@
 - [ ] Implement accessibility optimization
 - [ ] Add brand guideline integration
 
-### Week 10: Multiple Framework Support
+### Stage 8: Multiple Framework Support
 
 **Milestone**: Export to multiple frontend frameworks
 
@@ -225,7 +225,7 @@
 - [ ] Documentation format adjustment
 - [ ] Testing template generation
 
-### Week 11: Documentation & Collaboration
+### Stage 9: Documentation & Collaboration
 
 **Milestone**: Comprehensive documentation and sharing features
 
@@ -245,7 +245,7 @@
 - [ ] Team collaboration features
 - [ ] Public gallery of generated systems
 
-### Week 12: Production Optimization
+### Stage 10: Production Optimization
 
 **Milestone**: Production-ready application with monitoring
 
@@ -277,21 +277,21 @@
 
 ## Technical Milestones
 
-### Milestone 1: MVP Ready (End of Week 8)
+### Milestone 1: MVP Ready (End of Phase 2)
 
 - Basic design system generation working
 - Core components exported successfully
 - User can complete full workflow
 - Basic error handling implemented
 
-### Milestone 2: Feature Complete (End of Week 11)
+### Milestone 2: Feature Complete (End of Stage 9)
 
 - All planned features implemented
 - Multiple export formats working
 - Documentation generation complete
 - Advanced customization available
 
-### Milestone 3: Production Ready (End of Week 12)
+### Milestone 3: Production Ready (End of Phase 3)
 
 - Performance optimized
 - Comprehensive testing complete
@@ -339,21 +339,21 @@
 
 ## Post-Launch Roadmap
 
-### Month 2-3: Iteration & Improvement
+### Phase 4: Iteration & Improvement
 
 - User feedback integration
 - Performance optimization
 - Additional component types
 - Enhanced AI capabilities
 
-### Month 4-6: Advanced Features
+### Phase 5: Advanced Features
 
 - Team collaboration tools
 - Version control system
 - API access for developers
 - Integration marketplace
 
-### Month 7-12: Scale & Growth
+### Phase 6: Scale & Growth
 
 - Enterprise features
 - White-label solutions
