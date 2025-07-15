@@ -39,45 +39,61 @@ export class TailwindExporter {
     designSystem: GeneratedDesignSystem,
     options: TailwindExportOptions = this.getDefaultOptions()
   ): Promise<TailwindExportResult> {
-    const tokens = designTokenGenerator.generateTokens(designSystem.designSystem)
-    const lightTheme = themeGenerator.generateTheme(designSystem.designSystem, 'light')
-    const darkTheme = options.includeDarkMode ? 
-      themeGenerator.generateTheme(designSystem.designSystem, 'dark') : null
+    const tokens = designTokenGenerator.generateTokens(
+      designSystem.designSystem
+    )
+    const lightTheme = themeGenerator.generateTheme(
+      designSystem.designSystem,
+      'light'
+    )
+    const darkTheme = options.includeDarkMode
+      ? themeGenerator.generateTheme(designSystem.designSystem, 'dark')
+      : null
 
     const result: TailwindExportResult = {
       config: '',
-      safelist: []
+      safelist: [],
     }
 
     // Generate theme configuration
-    const themeConfig = this.generateThemeConfig(tokens, lightTheme, darkTheme, options)
-    
+    const themeConfig = this.generateThemeConfig(
+      tokens,
+      lightTheme,
+      darkTheme,
+      options
+    )
+
     // Generate plugins
     const plugins = this.generatePlugins(designSystem, tokens, options)
-    
+
     // Generate components
     if (options.includeComponents) {
       result.components = this.generateComponents(designSystem, tokens, options)
     }
-    
+
     // Generate utilities
     if (options.includeUtilities) {
       result.utilities = this.generateUtilities(tokens, options)
     }
-    
+
     // Generate safelist patterns
     if (options.generateSafelistPatterns) {
       result.safelist = this.generateSafelistPatterns(designSystem, options)
     }
-    
+
     // Generate preset
     if (options.generatePresets) {
       result.preset = this.generatePreset(themeConfig, plugins, options)
     }
-    
+
     // Generate main config
-    result.config = this.generateMainConfig(themeConfig, plugins, result, options)
-    
+    result.config = this.generateMainConfig(
+      themeConfig,
+      plugins,
+      result,
+      options
+    )
+
     // Generate plugins code
     if (options.includePlugins) {
       result.plugins_code = this.generatePluginsCode(plugins, options)
@@ -93,7 +109,7 @@ export class TailwindExporter {
     options: TailwindExportOptions
   ): any {
     const theme: any = {
-      extend: {}
+      extend: {},
     }
 
     // Colors
@@ -105,25 +121,25 @@ export class TailwindExporter {
         success: this.generateColorScale(tokens.colors.success),
         warning: this.generateColorScale(tokens.colors.warning),
         error: this.generateColorScale(tokens.colors.error),
-        info: this.generateColorScale(tokens.colors.info)
+        info: this.generateColorScale(tokens.colors.info),
       }
 
       // Add semantic colors
       theme.extend.colors.background = {
         DEFAULT: lightTheme.background.primary,
         secondary: lightTheme.background.secondary,
-        tertiary: lightTheme.background.tertiary
+        tertiary: lightTheme.background.tertiary,
       }
 
       theme.extend.colors.foreground = {
         DEFAULT: lightTheme.foreground.primary,
         secondary: lightTheme.foreground.secondary,
-        tertiary: lightTheme.foreground.tertiary
+        tertiary: lightTheme.foreground.tertiary,
       }
 
       theme.extend.colors.border = {
         DEFAULT: lightTheme.border.primary,
-        secondary: lightTheme.border.secondary
+        secondary: lightTheme.border.secondary,
       }
     }
 
@@ -132,15 +148,15 @@ export class TailwindExporter {
       theme.extend.fontFamily = {
         heading: [tokens.typography.headingFont, 'system-ui', 'sans-serif'],
         body: [tokens.typography.bodyFont, 'system-ui', 'sans-serif'],
-        mono: [tokens.typography.monoFont, 'Menlo', 'monospace']
+        mono: [tokens.typography.monoFont, 'Menlo', 'monospace'],
       }
 
       theme.extend.fontSize = {
-        'xs': ['0.75rem', { lineHeight: '1rem' }],
-        'sm': ['0.875rem', { lineHeight: '1.25rem' }],
-        'base': ['1rem', { lineHeight: '1.5rem' }],
-        'lg': ['1.125rem', { lineHeight: '1.75rem' }],
-        'xl': ['1.25rem', { lineHeight: '1.75rem' }],
+        xs: ['0.75rem', { lineHeight: '1rem' }],
+        sm: ['0.875rem', { lineHeight: '1.25rem' }],
+        base: ['1rem', { lineHeight: '1.5rem' }],
+        lg: ['1.125rem', { lineHeight: '1.75rem' }],
+        xl: ['1.25rem', { lineHeight: '1.75rem' }],
         '2xl': ['1.5rem', { lineHeight: '2rem' }],
         '3xl': ['1.875rem', { lineHeight: '2.25rem' }],
         '4xl': ['2.25rem', { lineHeight: '2.5rem' }],
@@ -148,7 +164,7 @@ export class TailwindExporter {
         '6xl': ['3.75rem', { lineHeight: '1' }],
         '7xl': ['4.5rem', { lineHeight: '1' }],
         '8xl': ['6rem', { lineHeight: '1' }],
-        '9xl': ['8rem', { lineHeight: '1' }]
+        '9xl': ['8rem', { lineHeight: '1' }],
       }
 
       theme.extend.fontWeight = {
@@ -160,64 +176,64 @@ export class TailwindExporter {
         semibold: '600',
         bold: '700',
         extrabold: '800',
-        black: '900'
+        black: '900',
       }
 
       theme.extend.lineHeight = {
-        'none': '1',
-        'tight': '1.25',
-        'snug': '1.375',
-        'normal': '1.5',
-        'relaxed': '1.625',
-        'loose': '2'
+        none: '1',
+        tight: '1.25',
+        snug: '1.375',
+        normal: '1.5',
+        relaxed: '1.625',
+        loose: '2',
       }
 
       theme.extend.letterSpacing = {
-        'tighter': '-0.05em',
-        'tight': '-0.025em',
-        'normal': '0em',
-        'wide': '0.025em',
-        'wider': '0.05em',
-        'widest': '0.1em'
+        tighter: '-0.05em',
+        tight: '-0.025em',
+        normal: '0em',
+        wide: '0.025em',
+        wider: '0.05em',
+        widest: '0.1em',
       }
     }
 
     // Spacing
     if (options.includeCustomSpacing) {
       theme.extend.spacing = {
-        'xs': tokens.spacing.xs,
-        'sm': tokens.spacing.sm,
-        'md': tokens.spacing.md,
-        'lg': tokens.spacing.lg,
-        'xl': tokens.spacing.xl,
+        xs: tokens.spacing.xs,
+        sm: tokens.spacing.sm,
+        md: tokens.spacing.md,
+        lg: tokens.spacing.lg,
+        xl: tokens.spacing.xl,
         '2xl': tokens.spacing['2xl'],
         '3xl': tokens.spacing['3xl'],
         '4xl': tokens.spacing['4xl'],
         '5xl': tokens.spacing['5xl'],
-        '6xl': tokens.spacing['6xl']
+        '6xl': tokens.spacing['6xl'],
       }
 
       theme.extend.borderRadius = {
-        'none': '0',
-        'sm': tokens.borderRadius.sm,
-        'DEFAULT': tokens.borderRadius.md,
-        'md': tokens.borderRadius.md,
-        'lg': tokens.borderRadius.lg,
-        'xl': tokens.borderRadius.xl,
+        none: '0',
+        sm: tokens.borderRadius.sm,
+        DEFAULT: tokens.borderRadius.md,
+        md: tokens.borderRadius.md,
+        lg: tokens.borderRadius.lg,
+        xl: tokens.borderRadius.xl,
         '2xl': tokens.borderRadius['2xl'],
         '3xl': tokens.borderRadius['3xl'],
-        'full': '9999px'
+        full: '9999px',
       }
     }
 
     // Breakpoints
     if (options.includeCustomBreakpoints) {
       theme.screens = {
-        'sm': '640px',
-        'md': '768px',
-        'lg': '1024px',
-        'xl': '1280px',
-        '2xl': '1536px'
+        sm: '640px',
+        md: '768px',
+        lg: '1024px',
+        xl: '1280px',
+        '2xl': '1536px',
       }
     }
 
@@ -230,52 +246,53 @@ export class TailwindExporter {
         'slide-out': 'slideOut 0.3s ease-in',
         'bounce-in': 'bounceIn 0.6s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
-        'rotate-in': 'rotateIn 0.3s ease-out'
+        'rotate-in': 'rotateIn 0.3s ease-out',
       }
 
       theme.extend.keyframes = {
         fadeIn: {
           '0%': { opacity: '0' },
-          '100%': { opacity: '1' }
+          '100%': { opacity: '1' },
         },
         fadeOut: {
           '0%': { opacity: '1' },
-          '100%': { opacity: '0' }
+          '100%': { opacity: '0' },
         },
         slideIn: {
           '0%': { transform: 'translateX(-100%)' },
-          '100%': { transform: 'translateX(0)' }
+          '100%': { transform: 'translateX(0)' },
         },
         slideOut: {
           '0%': { transform: 'translateX(0)' },
-          '100%': { transform: 'translateX(100%)' }
+          '100%': { transform: 'translateX(100%)' },
         },
         bounceIn: {
           '0%': { transform: 'scale(0.3)', opacity: '0' },
           '50%': { transform: 'scale(1.1)', opacity: '1' },
-          '100%': { transform: 'scale(1)', opacity: '1' }
+          '100%': { transform: 'scale(1)', opacity: '1' },
         },
         scaleIn: {
           '0%': { transform: 'scale(0)' },
-          '100%': { transform: 'scale(1)' }
+          '100%': { transform: 'scale(1)' },
         },
         rotateIn: {
           '0%': { transform: 'rotate(-180deg)', opacity: '0' },
-          '100%': { transform: 'rotate(0deg)', opacity: '1' }
-        }
+          '100%': { transform: 'rotate(0deg)', opacity: '1' },
+        },
       }
     }
 
     // Box shadows
     theme.extend.boxShadow = {
-      'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-      'DEFAULT': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-      'md': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-      'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-      'xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+      sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+      DEFAULT:
+        '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+      md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+      lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+      xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
       '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      'inner': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
-      'none': 'none'
+      inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
+      none: 'none',
     }
 
     return theme
@@ -302,7 +319,7 @@ export class TailwindExporter {
       700: this.darkenColor(color.base || color, 0.4),
       800: this.darkenColor(color.base || color, 0.6),
       900: this.darkenColor(color.base || color, 0.8),
-      950: this.darkenColor(color.base || color, 0.9)
+      950: this.darkenColor(color.base || color, 0.9),
     }
   }
 
@@ -327,7 +344,7 @@ export class TailwindExporter {
     if (options.includeComponents) {
       plugins.push({
         name: 'components',
-        code: this.generateComponentsPlugin(designSystem, tokens, options)
+        code: this.generateComponentsPlugin(designSystem, tokens, options),
       })
     }
 
@@ -335,7 +352,7 @@ export class TailwindExporter {
     if (options.includeUtilities) {
       plugins.push({
         name: 'utilities',
-        code: this.generateUtilitiesPlugin(tokens, options)
+        code: this.generateUtilitiesPlugin(tokens, options),
       })
     }
 
@@ -343,7 +360,7 @@ export class TailwindExporter {
     if (options.includeAccessibility) {
       plugins.push({
         name: 'accessibility',
-        code: this.generateAccessibilityPlugin(options)
+        code: this.generateAccessibilityPlugin(options),
       })
     }
 
@@ -351,7 +368,7 @@ export class TailwindExporter {
     if (options.includeRTL) {
       plugins.push({
         name: 'rtl',
-        code: this.generateRTLPlugin(options)
+        code: this.generateRTLPlugin(options),
       })
     }
 
@@ -364,7 +381,7 @@ export class TailwindExporter {
     options: TailwindExportOptions
   ): string {
     const components = designSystem.components || []
-    
+
     return `
 function({ addComponents, theme }) {
   const components = {
@@ -375,19 +392,22 @@ function({ addComponents, theme }) {
 }`
   }
 
-  private generateUtilitiesPlugin(tokens: any, options: TailwindExportOptions): string {
+  private generateUtilitiesPlugin(
+    tokens: any,
+    options: TailwindExportOptions
+  ): string {
     return `
 function({ addUtilities, theme }) {
   const utilities = {
     // Custom spacing utilities
-    ${Object.entries(tokens.spacing).map(([key, value]) => 
-      `'.space-${key}': { margin: '${value}' }`
-    ).join(',\n    ')},
+    ${Object.entries(tokens.spacing)
+      .map(([key, value]) => `'.space-${key}': { margin: '${value}' }`)
+      .join(',\n    ')},
     
     // Custom border radius utilities
-    ${Object.entries(tokens.borderRadius).map(([key, value]) => 
-      `'.rounded-${key}': { borderRadius: '${value}' }`
-    ).join(',\n    ')},
+    ${Object.entries(tokens.borderRadius)
+      .map(([key, value]) => `'.rounded-${key}': { borderRadius: '${value}' }`)
+      .join(',\n    ')},
     
     // Custom shadow utilities
     '.shadow-brand': { boxShadow: '0 4px 14px 0 rgba(0, 0, 0, 0.1)' },
@@ -509,7 +529,11 @@ function({ addUtilities }) {
 }`
   }
 
-  private generateComponentCSS(component: any, tokens: any, options: TailwindExportOptions): string {
+  private generateComponentCSS(
+    component: any,
+    tokens: any,
+    options: TailwindExportOptions
+  ): string {
     const componentName = component.name.toLowerCase()
     const baseClasses = this.generateBaseClasses(component, tokens)
     const variantClasses = this.generateVariantClasses(component, tokens)
@@ -536,38 +560,36 @@ function({ addUtilities }) {
       'outline: "2px solid transparent"',
       'outlineOffset: "2px"',
       'cursor: "pointer"',
-      '&:disabled': {
-        'opacity': '0.5',
-        'cursor': 'not-allowed'
-      },
-      '&:focus-visible': {
-        'outline': '2px solid rgb(59 130 246)',
-        'outlineOffset': '2px'
-      }
+      '&:disabled: { opacity: "0.5", cursor: "not-allowed" }',
+      '&:focus-visible: { outline: "2px solid rgb(59 130 246)", outlineOffset: "2px" }',
     ]
 
     return baseStyles.join(',\n      ')
   }
 
   private generateVariantClasses(component: any, tokens: any): string {
-    return component.variants.map((variant: any) => {
-      const variantName = variant.name
-      const styles = this.getVariantStyles(variantName, tokens)
-      
-      return `'.${component.name.toLowerCase()}--${variantName}': {
+    return component.variants
+      .map((variant: any) => {
+        const variantName = variant.name
+        const styles = this.getVariantStyles(variantName, tokens)
+
+        return `'.${component.name.toLowerCase()}--${variantName}': {
         ${styles}
       }`
-    }).join(',\n    ')
+      })
+      .join(',\n    ')
   }
 
   private generateSizeClasses(component: any, tokens: any): string {
-    return component.sizes.map((size: string) => {
-      const styles = this.getSizeStyles(size, tokens)
-      
-      return `'.${component.name.toLowerCase()}--${size}': {
+    return component.sizes
+      .map((size: string) => {
+        const styles = this.getSizeStyles(size, tokens)
+
+        return `'.${component.name.toLowerCase()}--${size}': {
         ${styles}
       }`
-    }).join(',\n    ')
+      })
+      .join(',\n    ')
   }
 
   private getVariantStyles(variant: string, tokens: any): string {
@@ -619,7 +641,7 @@ function({ addUtilities }) {
         },
         '&:active': {
           backgroundColor: theme("colors.red.700")
-        }`
+        }`,
     }
 
     return variantStyles[variant] || variantStyles.primary
@@ -650,7 +672,7 @@ function({ addUtilities }) {
         paddingLeft: "2rem",
         paddingRight: "2rem",
         fontSize: "1.125rem",
-        lineHeight: "1.75rem"`
+        lineHeight: "1.75rem"`,
     }
 
     return sizeStyles[size] || sizeStyles.md
@@ -662,27 +684,32 @@ function({ addUtilities }) {
     options: TailwindExportOptions
   ): string {
     const components = designSystem.components || []
-    
-    return components.map(component => {
-      return `// ${component.name} Component
+
+    return components
+      .map(component => {
+        return `// ${component.name} Component
 @layer components {
   ${this.generateComponentCSS(component, tokens, options)}
 }`
-    }).join('\n\n')
+      })
+      .join('\n\n')
   }
 
-  private generateUtilities(tokens: any, options: TailwindExportOptions): string {
+  private generateUtilities(
+    tokens: any,
+    options: TailwindExportOptions
+  ): string {
     return `// Custom Utilities
 @layer utilities {
   /* Spacing utilities */
-  ${Object.entries(tokens.spacing).map(([key, value]) => 
-    `.space-${key} { margin: ${value}; }`
-  ).join('\n  ')}
+  ${Object.entries(tokens.spacing)
+    .map(([key, value]) => `.space-${key} { margin: ${value}; }`)
+    .join('\n  ')}
   
   /* Border radius utilities */
-  ${Object.entries(tokens.borderRadius).map(([key, value]) => 
-    `.rounded-${key} { border-radius: ${value}; }`
-  ).join('\n  ')}
+  ${Object.entries(tokens.borderRadius)
+    .map(([key, value]) => `.rounded-${key} { border-radius: ${value}; }`)
+    .join('\n  ')}
   
   /* Focus utilities */
   .focus-ring:focus {
@@ -709,15 +736,15 @@ function({ addUtilities }) {
     // Add component patterns
     components.forEach(component => {
       const componentName = component.name.toLowerCase()
-      
+
       // Base component
       patterns.push(`${options.prefix}${componentName}`)
-      
+
       // Variants
       component.variants.forEach((variant: any) => {
         patterns.push(`${options.prefix}${componentName}--${variant.name}`)
       })
-      
+
       // Sizes
       component.sizes.forEach((size: string) => {
         patterns.push(`${options.prefix}${componentName}--${size}`)
@@ -725,9 +752,29 @@ function({ addUtilities }) {
     })
 
     // Add color patterns
-    const colorNames = ['primary', 'secondary', 'neutral', 'success', 'warning', 'error', 'info']
-    const colorShades = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950']
-    
+    const colorNames = [
+      'primary',
+      'secondary',
+      'neutral',
+      'success',
+      'warning',
+      'error',
+      'info',
+    ]
+    const colorShades = [
+      '50',
+      '100',
+      '200',
+      '300',
+      '400',
+      '500',
+      '600',
+      '700',
+      '800',
+      '900',
+      '950',
+    ]
+
     colorNames.forEach(name => {
       colorShades.forEach(shade => {
         patterns.push(`bg-${name}-${shade}`)
@@ -747,11 +794,12 @@ function({ addUtilities }) {
     const presetContent = {
       content: [],
       theme: themeConfig,
-      plugins: plugins.map(p => p.code)
+      plugins: plugins.map(p => p.code),
     }
 
     const format = options.format === 'ts' ? 'ts' : 'js'
-    const exportStatement = format === 'ts' ? 'export default' : 'module.exports ='
+    const exportStatement =
+      format === 'ts' ? 'export default' : 'module.exports ='
 
     return `${format === 'ts' ? 'import type { Config } from "tailwindcss"\n\n' : ''}${exportStatement} {
   ${JSON.stringify(presetContent, null, 2).replace(/"/g, '')}
@@ -768,14 +816,15 @@ function({ addUtilities }) {
       content: [
         './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
         './src/components/**/*.{js,ts,jsx,tsx,mdx}',
-        './src/app/**/*.{js,ts,jsx,tsx,mdx}'
+        './src/app/**/*.{js,ts,jsx,tsx,mdx}',
       ],
       darkMode: options.includeDarkMode ? 'class' : undefined,
       theme: themeConfig,
       plugins: plugins.map(p => `require('${p.name}')`),
       prefix: options.prefix || '',
-      corePlugins: options.corePlugins.length > 0 ? options.corePlugins : undefined,
-      safelist: result.safelist || undefined
+      corePlugins:
+        options.corePlugins.length > 0 ? options.corePlugins : undefined,
+      safelist: result.safelist || undefined,
     }
 
     // Remove undefined values
@@ -786,10 +835,11 @@ function({ addUtilities }) {
     })
 
     const format = options.format === 'ts' ? 'ts' : 'js'
-    const exportStatement = format === 'ts' ? 'export default' : 'module.exports ='
+    const exportStatement =
+      format === 'ts' ? 'export default' : 'module.exports ='
 
     let configString = JSON.stringify(config, null, 2)
-    
+
     // Replace plugin references with actual function calls
     plugins.forEach(plugin => {
       configString = configString.replace(
@@ -803,14 +853,20 @@ function({ addUtilities }) {
 }${format === 'ts' ? ' satisfies Config' : ''}`
   }
 
-  private generatePluginsCode(plugins: any[], options: TailwindExportOptions): string {
-    return plugins.map(plugin => {
-      const format = options.format === 'ts' ? 'ts' : 'js'
-      const exportStatement = format === 'ts' ? 'export default' : 'module.exports ='
+  private generatePluginsCode(
+    plugins: any[],
+    options: TailwindExportOptions
+  ): string {
+    return plugins
+      .map(plugin => {
+        const format = options.format === 'ts' ? 'ts' : 'js'
+        const exportStatement =
+          format === 'ts' ? 'export default' : 'module.exports ='
 
-      return `// ${plugin.name} plugin
+        return `// ${plugin.name} plugin
 ${exportStatement} ${plugin.code}`
-    }).join('\n\n')
+      })
+      .join('\n\n')
   }
 
   private getDefaultOptions(): TailwindExportOptions {
@@ -831,7 +887,7 @@ ${exportStatement} ${plugin.code}`
       corePlugins: [],
       generatePresets: true,
       generateSafelistPatterns: true,
-      minify: false
+      minify: false,
     }
   }
 }

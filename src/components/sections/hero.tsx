@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Container, Section, Stack } from '@/components/layout'
+import Link from 'next/link'
 
 export function Hero() {
   return (
@@ -20,21 +21,23 @@ export function Hero() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 items-center">
-              <Button size="lg" className="text-lg px-8 py-6">
-                Start Generating
-                <svg
-                  className="ml-2 h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 7l5 5m0 0l-5 5m5-5H6"
-                  />
-                </svg>
+              <Button size="lg" className="text-lg px-8 py-6" asChild>
+                <Link href="/generate">
+                  Start Generating
+                  <svg
+                    className="ml-2 h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                </Link>
               </Button>
               <Button variant="outline" size="lg" className="text-lg px-8 py-6">
                 View Examples
