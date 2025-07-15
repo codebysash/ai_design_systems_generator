@@ -46,14 +46,18 @@ export class ThemeGenerator {
   private colorUtils = new ThemeColorUtils()
   private variantUtils = new ThemeVariantUtils()
 
-  generateTheme(designSystem: DesignSystemConfig, mode: 'light' | 'dark' = 'light'): Theme {
-    const baseColors = mode === 'dark' ? 
-      this.colorUtils.generateDarkModeColors(designSystem.colors) : 
-      designSystem.colors
+  generateTheme(
+    designSystem: DesignSystemConfig,
+    mode: 'light' | 'dark' = 'light'
+  ): Theme {
+    const baseColors =
+      mode === 'dark'
+        ? this.colorUtils.generateDarkModeColors(designSystem.colors)
+        : designSystem.colors
 
     const tokens = designTokenGenerator.generateTokens({
       ...designSystem,
-      colors: baseColors
+      colors: baseColors,
     })
 
     return {
@@ -63,7 +67,7 @@ export class ThemeGenerator {
       colors: baseColors,
       typography: designSystem.typography,
       mode,
-      cssVariables: this.generateCSSVariables(tokens)
+      cssVariables: this.generateCSSVariables(tokens),
     }
   }
 
@@ -71,34 +75,46 @@ export class ThemeGenerator {
     const variants: ThemeVariant[] = []
 
     // Accent color variants
-    const accentVariants = this.variantUtils.generateAccentVariants(baseTheme.colors.accent)
-    variants.push(...accentVariants.map(variant => ({
-      name: `${baseTheme.name}-accent-${variant.name}`,
-      displayName: `${baseTheme.displayName} - ${variant.displayName}`,
-      description: `${baseTheme.displayName} with ${variant.displayName.toLowerCase()} accent`,
-      colorModifications: {
-        accent: variant.colors
-      }
-    })))
+    const accentVariants = this.variantUtils.generateAccentVariants(
+      baseTheme.colors.accent
+    )
+    variants.push(
+      ...accentVariants.map(variant => ({
+        name: `${baseTheme.name}-accent-${variant.name}`,
+        displayName: `${baseTheme.displayName} - ${variant.displayName}`,
+        description: `${baseTheme.displayName} with ${variant.displayName.toLowerCase()} accent`,
+        colorModifications: {
+          accent: variant.colors,
+        },
+      }))
+    )
 
     // Intensity variants
-    const intensityVariants = this.variantUtils.generateIntensityVariants(baseTheme.colors)
-    variants.push(...intensityVariants.map(variant => ({
-      name: `${baseTheme.name}-${variant.name}`,
-      displayName: `${baseTheme.displayName} - ${variant.displayName}`,
-      description: `${baseTheme.displayName} with ${variant.displayName.toLowerCase()} intensity`,
-      colorModifications: variant.colorModifications
-    })))
+    const intensityVariants = this.variantUtils.generateIntensityVariants(
+      baseTheme.colors
+    )
+    variants.push(
+      ...intensityVariants.map(variant => ({
+        name: `${baseTheme.name}-${variant.name}`,
+        displayName: `${baseTheme.displayName} - ${variant.displayName}`,
+        description: `${baseTheme.displayName} with ${variant.displayName.toLowerCase()} intensity`,
+        colorModifications: variant.colorModifications,
+      }))
+    )
 
     // Typography variants
-    const typographyVariants = this.variantUtils.generateTypographyVariants(baseTheme.typography)
-    variants.push(...typographyVariants.map(variant => ({
-      name: `${baseTheme.name}-${variant.name}`,
-      displayName: `${baseTheme.displayName} - ${variant.displayName}`,
-      description: `${baseTheme.displayName} with ${variant.displayName.toLowerCase()} typography`,
-      colorModifications: {},
-      typographyModifications: variant.modifications
-    })))
+    const typographyVariants = this.variantUtils.generateTypographyVariants(
+      baseTheme.typography
+    )
+    variants.push(
+      ...typographyVariants.map(variant => ({
+        name: `${baseTheme.name}-${variant.name}`,
+        displayName: `${baseTheme.displayName} - ${variant.displayName}`,
+        description: `${baseTheme.displayName} with ${variant.displayName.toLowerCase()} typography`,
+        colorModifications: {},
+        typographyModifications: variant.modifications,
+      }))
+    )
 
     return variants
   }
@@ -109,10 +125,12 @@ export class ThemeGenerator {
       variant.colorModifications
     )
 
-    const modifiedTypography = variant.typographyModifications ? {
-      ...baseTheme.typography,
-      ...variant.typographyModifications
-    } : baseTheme.typography
+    const modifiedTypography = variant.typographyModifications
+      ? {
+          ...baseTheme.typography,
+          ...variant.typographyModifications,
+        }
+      : baseTheme.typography
 
     const tokens = designTokenGenerator.generateTokens({
       name: baseTheme.name,
@@ -120,11 +138,47 @@ export class ThemeGenerator {
       style: 'modern' as const,
       colors: modifiedColors,
       typography: modifiedTypography,
-      spacing: { unit: 4, scale: [0, 2, 4, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 192, 224, 256] },
-      borderRadius: { none: '0', sm: '0.125rem', md: '0.375rem', lg: '0.5rem', xl: '0.75rem', '2xl': '1rem', '3xl': '1.5rem', full: '9999px' },
-      shadows: { sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', md: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)', inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)' },
-      animation: { transition: { fast: '0.15s', normal: '0.2s', slow: '0.3s' }, easing: { ease: 'ease', easeIn: 'ease-in', easeOut: 'ease-out', easeInOut: 'ease-in-out' } },
-      breakpoints: { sm: '640px', md: '768px', lg: '1024px', xl: '1280px', '2xl': '1536px' }
+      spacing: {
+        unit: 4,
+        scale: [
+          0, 2, 4, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 56, 64, 80, 96, 112,
+          128, 144, 160, 192, 224, 256,
+        ],
+      },
+      borderRadius: {
+        none: '0',
+        sm: '0.125rem',
+        md: '0.375rem',
+        lg: '0.5rem',
+        xl: '0.75rem',
+        '2xl': '1rem',
+        '3xl': '1.5rem',
+        full: '9999px',
+      },
+      shadows: {
+        sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        md: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+        lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+        xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+        '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
+      },
+      animation: {
+        transition: { fast: '0.15s', normal: '0.2s', slow: '0.3s' },
+        easing: {
+          ease: 'ease',
+          easeIn: 'ease-in',
+          easeOut: 'ease-out',
+          easeInOut: 'ease-in-out',
+        },
+      },
+      breakpoints: {
+        sm: '640px',
+        md: '768px',
+        lg: '1024px',
+        xl: '1280px',
+        '2xl': '1536px',
+      },
     })
 
     return {
@@ -134,7 +188,7 @@ export class ThemeGenerator {
       description: variant.description,
       colors: modifiedColors,
       typography: modifiedTypography,
-      cssVariables: this.generateCSSVariables(tokens)
+      cssVariables: this.generateCSSVariables(tokens),
     }
   }
 
@@ -206,7 +260,7 @@ export class ThemeGenerator {
       displayName: theme.displayName,
       description: theme.description,
       mode: theme.mode,
-      tokens: theme.cssVariables
+      tokens: theme.cssVariables,
     }
 
     return JSON.stringify(config, null, 2)
@@ -214,7 +268,9 @@ export class ThemeGenerator {
 }
 
 class ThemeColorUtils {
-  generateDarkModeColors(lightColors: DesignSystemConfig['colors']): DesignSystemConfig['colors'] {
+  generateDarkModeColors(
+    lightColors: DesignSystemConfig['colors']
+  ): DesignSystemConfig['colors'] {
     return {
       primary: this.invertColorScale(lightColors.primary),
       secondary: this.invertColorScale(lightColors.secondary),
@@ -224,8 +280,8 @@ class ThemeColorUtils {
         success: this.darkenColor(lightColors.semantic.success),
         warning: this.darkenColor(lightColors.semantic.warning),
         error: this.darkenColor(lightColors.semantic.error),
-        info: this.darkenColor(lightColors.semantic.info)
-      }
+        info: this.darkenColor(lightColors.semantic.info),
+      },
     }
   }
 
@@ -240,7 +296,7 @@ class ThemeColorUtils {
       '600': scale['300'],
       '700': scale['200'],
       '800': scale['100'],
-      '900': scale['50']
+      '900': scale['50'],
     }
   }
 
@@ -255,7 +311,7 @@ class ThemeColorUtils {
       '600': '#a3a3a3',
       '700': '#d4d4d4',
       '800': '#e5e5e5',
-      '900': '#f5f5f5'
+      '900': '#f5f5f5',
     }
   }
 
@@ -265,11 +321,19 @@ class ThemeColorUtils {
     const num = parseInt(hex, 16)
     const amt = -40
     const R = (num >> 16) + amt
-    const G = (num >> 8 & 0x00FF) + amt
-    const B = (num & 0x0000FF) + amt
-    return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
-      (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
-      (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1)
+    const G = ((num >> 8) & 0x00ff) + amt
+    const B = (num & 0x0000ff) + amt
+    return (
+      '#' +
+      (
+        0x1000000 +
+        (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 +
+        (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 +
+        (B < 255 ? (B < 1 ? 0 : B) : 255)
+      )
+        .toString(16)
+        .slice(1)
+    )
   }
 
   applyColorModifications(
@@ -308,18 +372,18 @@ class ThemeVariantUtils {
       {
         name: 'warm',
         displayName: 'Warm Accent',
-        colors: this.generateWarmAccentScale(baseAccent)
+        colors: this.generateWarmAccentScale(baseAccent),
       },
       {
         name: 'cool',
         displayName: 'Cool Accent',
-        colors: this.generateCoolAccentScale(baseAccent)
+        colors: this.generateCoolAccentScale(baseAccent),
       },
       {
         name: 'vibrant',
         displayName: 'Vibrant Accent',
-        colors: this.generateVibrantAccentScale(baseAccent)
-      }
+        colors: this.generateVibrantAccentScale(baseAccent),
+      },
     ]
   }
 
@@ -335,8 +399,8 @@ class ThemeVariantUtils {
         colorModifications: {
           primary: this.reduceIntensity(colors.primary),
           secondary: this.reduceIntensity(colors.secondary),
-          accent: this.reduceIntensity(colors.accent)
-        }
+          accent: this.reduceIntensity(colors.accent),
+        },
       },
       {
         name: 'bold',
@@ -344,13 +408,15 @@ class ThemeVariantUtils {
         colorModifications: {
           primary: this.increaseIntensity(colors.primary),
           secondary: this.increaseIntensity(colors.secondary),
-          accent: this.increaseIntensity(colors.accent)
-        }
-      }
+          accent: this.increaseIntensity(colors.accent),
+        },
+      },
     ]
   }
 
-  generateTypographyVariants(typography: DesignSystemConfig['typography']): Array<{
+  generateTypographyVariants(
+    typography: DesignSystemConfig['typography']
+  ): Array<{
     name: string
     displayName: string
     modifications: Partial<DesignSystemConfig['typography']>
@@ -361,17 +427,17 @@ class ThemeVariantUtils {
         displayName: 'Compact',
         modifications: {
           scale: this.generateCompactScale(typography.scale),
-          lineHeight: this.generateCompactLineHeight(typography.lineHeight)
-        }
+          lineHeight: this.generateCompactLineHeight(typography.lineHeight),
+        },
       },
       {
         name: 'comfortable',
         displayName: 'Comfortable',
         modifications: {
           scale: this.generateComfortableScale(typography.scale),
-          lineHeight: this.generateComfortableLineHeight(typography.lineHeight)
-        }
-      }
+          lineHeight: this.generateComfortableLineHeight(typography.lineHeight),
+        },
+      },
     ]
   }
 
@@ -380,7 +446,7 @@ class ThemeVariantUtils {
     return {
       '500': this.shiftHue(base['500'], 30),
       '600': this.shiftHue(base['600'], 30),
-      '700': this.shiftHue(base['700'], 30)
+      '700': this.shiftHue(base['700'], 30),
     }
   }
 
@@ -389,7 +455,7 @@ class ThemeVariantUtils {
     return {
       '500': this.shiftHue(base['500'], -30),
       '600': this.shiftHue(base['600'], -30),
-      '700': this.shiftHue(base['700'], -30)
+      '700': this.shiftHue(base['700'], -30),
     }
   }
 
@@ -398,7 +464,7 @@ class ThemeVariantUtils {
     return {
       '500': this.increaseSaturation(base['500']),
       '600': this.increaseSaturation(base['600']),
-      '700': this.increaseSaturation(base['700'])
+      '700': this.increaseSaturation(base['700']),
     }
   }
 
@@ -407,7 +473,7 @@ class ThemeVariantUtils {
     return {
       '400': scale['300'],
       '500': scale['400'],
-      '600': scale['500']
+      '600': scale['500'],
     }
   }
 
@@ -416,11 +482,13 @@ class ThemeVariantUtils {
     return {
       '400': scale['500'],
       '500': scale['600'],
-      '600': scale['700']
+      '600': scale['700'],
     }
   }
 
-  private generateCompactScale(scale: DesignSystemConfig['typography']['scale']): Partial<DesignSystemConfig['typography']['scale']> {
+  private generateCompactScale(
+    scale: DesignSystemConfig['typography']['scale']
+  ): DesignSystemConfig['typography']['scale'] {
     return {
       xs: '0.7rem',
       sm: '0.8rem',
@@ -428,11 +496,16 @@ class ThemeVariantUtils {
       lg: '1rem',
       xl: '1.1rem',
       '2xl': '1.3rem',
-      '3xl': '1.6rem'
+      '3xl': '1.6rem',
+      '4xl': '1.9rem',
+      '5xl': '2.5rem',
+      '6xl': '3rem',
     }
   }
 
-  private generateComfortableScale(scale: DesignSystemConfig['typography']['scale']): Partial<DesignSystemConfig['typography']['scale']> {
+  private generateComfortableScale(
+    scale: DesignSystemConfig['typography']['scale']
+  ): DesignSystemConfig['typography']['scale'] {
     return {
       xs: '0.8rem',
       sm: '0.95rem',
@@ -440,27 +513,34 @@ class ThemeVariantUtils {
       lg: '1.3rem',
       xl: '1.5rem',
       '2xl': '1.8rem',
-      '3xl': '2.2rem'
+      '3xl': '2.2rem',
+      '4xl': '2.7rem',
+      '5xl': '3.5rem',
+      '6xl': '4.2rem',
     }
   }
 
-  private generateCompactLineHeight(lineHeight: DesignSystemConfig['typography']['lineHeight']): Partial<DesignSystemConfig['typography']['lineHeight']> {
+  private generateCompactLineHeight(
+    lineHeight: DesignSystemConfig['typography']['lineHeight']
+  ): DesignSystemConfig['typography']['lineHeight'] {
     return {
       tight: 1.2,
       snug: 1.3,
       normal: 1.4,
       relaxed: 1.5,
-      loose: 1.6
+      loose: 1.6,
     }
   }
 
-  private generateComfortableLineHeight(lineHeight: DesignSystemConfig['typography']['lineHeight']): Partial<DesignSystemConfig['typography']['lineHeight']> {
+  private generateComfortableLineHeight(
+    lineHeight: DesignSystemConfig['typography']['lineHeight']
+  ): DesignSystemConfig['typography']['lineHeight'] {
     return {
       tight: 1.4,
       snug: 1.5,
       normal: 1.6,
       relaxed: 1.7,
-      loose: 1.8
+      loose: 1.8,
     }
   }
 

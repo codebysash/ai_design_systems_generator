@@ -1,4 +1,9 @@
-import { GeneratedComponent, ComponentProp, ComponentVariant, DesignSystemConfig } from '@/types'
+import {
+  GeneratedComponent,
+  ComponentProp,
+  ComponentVariant,
+  DesignSystemConfig,
+} from '@/types'
 
 export interface TypeGenerationOptions {
   strict: boolean
@@ -36,9 +41,13 @@ export class TypeScriptTypeGenerator {
     options: TypeGenerationOptions = this.getDefaultOptions()
   ): GeneratedTypes {
     const interfaces = this.generateInterfaces(component, options)
-    const types = this.generateTypes(component, options)
-    const enums = options.generateEnums ? this.generateEnums(component, designSystem) : ''
-    const utilities = options.includeUtilityTypes ? this.generateUtilityTypes(component) : ''
+    const types = this.generateTypeDefinitions(component, options)
+    const enums = options.generateEnums
+      ? this.generateEnums(component, designSystem)
+      : ''
+    const utilities = options.includeUtilityTypes
+      ? this.generateUtilityTypes(component)
+      : ''
     const exports = this.generateExports(component, options)
     const imports = this.generateImports(component, options)
 
@@ -48,39 +57,72 @@ export class TypeScriptTypeGenerator {
       enums,
       utilities,
       exports,
-      imports
+      imports,
     }
   }
 
-  private generateInterfaces(component: GeneratedComponent, options: TypeGenerationOptions): string {
-    const baseInterface = this.interfaceGenerator.generateBaseInterface(component)
-    const propsInterface = this.interfaceGenerator.generatePropsInterface(component, options)
-    const variantInterface = this.interfaceGenerator.generateVariantInterface(component)
-    const stateInterface = this.interfaceGenerator.generateStateInterface(component)
+  private generateInterfaces(
+    component: GeneratedComponent,
+    options: TypeGenerationOptions
+  ): string {
+    const baseInterface =
+      this.interfaceGenerator.generateBaseInterface(component)
+    const propsInterface = this.interfaceGenerator.generatePropsInterface(
+      component,
+      options
+    )
+    const variantInterface =
+      this.interfaceGenerator.generateVariantInterface(component)
+    const stateInterface =
+      this.interfaceGenerator.generateStateInterface(component)
 
-    const interfaces = [baseInterface, propsInterface, variantInterface, stateInterface]
+    const interfaces = [
+      baseInterface,
+      propsInterface,
+      variantInterface,
+      stateInterface,
+    ]
       .filter(Boolean)
       .join('\n\n')
 
     return interfaces
   }
 
-  private generateTypes(component: GeneratedComponent, options: TypeGenerationOptions): string {
+  private generateTypeDefinitions(
+    component: GeneratedComponent,
+    options: TypeGenerationOptions
+  ): string {
     const variantTypes = this.unionGenerator.generateVariantTypes(component)
     const sizeTypes = this.unionGenerator.generateSizeTypes(component)
     const stateTypes = this.unionGenerator.generateStateTypes(component)
-    const eventTypes = options.includeEventHandlers ? this.eventGenerator.generateEventTypes(component) : ''
-    const refTypes = options.includeRefTypes ? this.refGenerator.generateRefTypes(component) : ''
-    const polymorphicTypes = options.includePolymorphicTypes ? this.polymorphicGenerator.generatePolymorphicTypes(component) : ''
+    const eventTypes = options.includeEventHandlers
+      ? this.eventGenerator.generateEventTypes(component)
+      : ''
+    const refTypes = options.includeRefTypes
+      ? this.refGenerator.generateRefTypes(component)
+      : ''
+    const polymorphicTypes = options.includePolymorphicTypes
+      ? this.polymorphicGenerator.generatePolymorphicTypes(component)
+      : ''
 
-    const types = [variantTypes, sizeTypes, stateTypes, eventTypes, refTypes, polymorphicTypes]
+    const types = [
+      variantTypes,
+      sizeTypes,
+      stateTypes,
+      eventTypes,
+      refTypes,
+      polymorphicTypes,
+    ]
       .filter(Boolean)
       .join('\n\n')
 
     return types
   }
 
-  private generateEnums(component: GeneratedComponent, designSystem: DesignSystemConfig): string {
+  private generateEnums(
+    component: GeneratedComponent,
+    designSystem: DesignSystemConfig
+  ): string {
     return this.enumGenerator.generateEnums(component, designSystem)
   }
 
@@ -88,12 +130,15 @@ export class TypeScriptTypeGenerator {
     return this.utilityGenerator.generateUtilityTypes(component)
   }
 
-  private generateExports(component: GeneratedComponent, options: TypeGenerationOptions): string {
+  private generateExports(
+    component: GeneratedComponent,
+    options: TypeGenerationOptions
+  ): string {
     const exports = [
       `export type { ${component.name}Props }`,
       `export type { ${component.name}Variant }`,
       `export type { ${component.name}Size }`,
-      `export type { ${component.name}State }`
+      `export type { ${component.name}State }`,
     ]
 
     if (options.includeEventHandlers) {
@@ -109,22 +154,31 @@ export class TypeScriptTypeGenerator {
     }
 
     if (options.generateEnums) {
-      exports.push(`export { ${component.name}Variant as ${component.name}VariantEnum }`)
-      exports.push(`export { ${component.name}Size as ${component.name}SizeEnum }`)
+      exports.push(
+        `export { ${component.name}Variant as ${component.name}VariantEnum }`
+      )
+      exports.push(
+        `export { ${component.name}Size as ${component.name}SizeEnum }`
+      )
     }
 
     return exports.join('\n')
   }
 
-  private generateImports(component: GeneratedComponent, options: TypeGenerationOptions): string {
-    const imports = ['import React from \'react\'']
+  private generateImports(
+    component: GeneratedComponent,
+    options: TypeGenerationOptions
+  ): string {
+    const imports = ["import React from 'react'"]
 
     if (options.includePolymorphicTypes) {
-      imports.push('import type { ElementType, ComponentProps } from \'react\'')
+      imports.push("import type { ElementType, ComponentProps } from 'react'")
     }
 
     if (options.includeEventHandlers) {
-      imports.push('import type { MouseEvent, KeyboardEvent, FocusEvent } from \'react\'')
+      imports.push(
+        "import type { MouseEvent, KeyboardEvent, FocusEvent } from 'react'"
+      )
     }
 
     return imports.join('\n')
@@ -139,7 +193,7 @@ export class TypeScriptTypeGenerator {
       includePolymorphicTypes: false,
       generateEnums: false,
       generateUnions: true,
-      generateGenerics: false
+      generateGenerics: false,
     }
   }
 
@@ -176,7 +230,7 @@ export type ComponentSizes<T extends ComponentName> =
 class InterfaceGenerator {
   generateBaseInterface(component: GeneratedComponent): string {
     const baseElement = this.getBaseElement(component.name)
-    
+
     return `interface ${component.name}BaseProps {
   /** Additional CSS classes */
   className?: string
@@ -187,24 +241,35 @@ class InterfaceGenerator {
 }`
   }
 
-  generatePropsInterface(component: GeneratedComponent, options: TypeGenerationOptions): string {
+  generatePropsInterface(
+    component: GeneratedComponent,
+    options: TypeGenerationOptions
+  ): string {
     const baseElement = this.getBaseElement(component.name)
     const extendedProps = this.getExtendedProps(component.name)
-    
-    const props = component.props.map(prop => {
-      const optional = prop.required ? '' : '?'
-      const jsDoc = this.generateJSDoc(prop)
-      const defaultValue = prop.default ? ` // default: ${JSON.stringify(prop.default)}` : ''
-      
-      return `${jsDoc}
+
+    const props = component.props
+      .map(prop => {
+        const optional = prop.required ? '' : '?'
+        const jsDoc = this.generateJSDoc(prop)
+        const defaultValue = prop.default
+          ? ` // default: ${JSON.stringify(prop.default)}`
+          : ''
+
+        return `${jsDoc}
   ${prop.name}${optional}: ${prop.type}${defaultValue}`
-    }).join('\n\n')
+      })
+      .join('\n\n')
 
     const variantProps = this.generateVariantProps(component)
     const sizeProps = this.generateSizeProps(component)
     const stateProps = this.generateStateProps(component)
-    const eventProps = options.includeEventHandlers ? this.generateEventProps(component) : ''
-    const refProps = options.includeRefTypes ? this.generateRefProps(component) : ''
+    const eventProps = options.includeEventHandlers
+      ? this.generateEventProps(component)
+      : ''
+    const refProps = options.includeRefTypes
+      ? this.generateRefProps(component)
+      : ''
 
     return `interface ${component.name}Props extends ${extendedProps}, ${component.name}BaseProps {
 ${props}
@@ -225,23 +290,30 @@ ${refProps}
     const variants = component.variants.map(variant => ({
       name: variant.name,
       description: variant.description,
-      props: variant.props
+      props: variant.props,
     }))
 
     return `interface ${component.name}VariantConfig {
-  ${variants.map(variant => `
+  ${variants
+    .map(
+      variant => `
   /** ${variant.description} */
   ${variant.name}: {
-    ${Object.entries(variant.props).map(([key, value]) => 
-      `${key}: ${typeof value === 'string' ? `'${value}'` : JSON.stringify(value)}`
-    ).join('\n    ')}
-  }`).join('\n')}
+    ${Object.entries(variant.props)
+      .map(
+        ([key, value]) =>
+          `${key}: ${typeof value === 'string' ? `'${value}'` : JSON.stringify(value)}`
+      )
+      .join('\n    ')}
+  }`
+    )
+    .join('\n')}
 }`
   }
 
   generateStateInterface(component: GeneratedComponent): string {
     const states = component.states.map(state => `'${state}'`).join(' | ')
-    
+
     return `interface ${component.name}StateConfig {
   /** Current component state */
   state: ${states}
@@ -256,15 +328,15 @@ ${refProps}
 
   private getBaseElement(componentName: string): string {
     const elementMap = {
-      'Button': 'HTMLButtonElement',
-      'Input': 'HTMLInputElement',
-      'Card': 'HTMLDivElement',
-      'Modal': 'HTMLDivElement',
-      'Select': 'HTMLSelectElement',
-      'Textarea': 'HTMLTextAreaElement',
-      'Link': 'HTMLAnchorElement',
-      'List': 'HTMLUListElement',
-      'Table': 'HTMLTableElement'
+      Button: 'HTMLButtonElement',
+      Input: 'HTMLInputElement',
+      Card: 'HTMLDivElement',
+      Modal: 'HTMLDivElement',
+      Select: 'HTMLSelectElement',
+      Textarea: 'HTMLTextAreaElement',
+      Link: 'HTMLAnchorElement',
+      List: 'HTMLUListElement',
+      Table: 'HTMLTableElement',
     }
 
     return elementMap[componentName as keyof typeof elementMap] || 'HTMLElement'
@@ -272,24 +344,29 @@ ${refProps}
 
   private getExtendedProps(componentName: string): string {
     const propsMap = {
-      'Button': 'React.ButtonHTMLAttributes<HTMLButtonElement>',
-      'Input': 'React.InputHTMLAttributes<HTMLInputElement>',
-      'Card': 'React.HTMLAttributes<HTMLDivElement>',
-      'Modal': 'React.HTMLAttributes<HTMLDivElement>',
-      'Select': 'React.SelectHTMLAttributes<HTMLSelectElement>',
-      'Textarea': 'React.TextareaHTMLAttributes<HTMLTextAreaElement>',
-      'Link': 'React.AnchorHTMLAttributes<HTMLAnchorElement>',
-      'List': 'React.HTMLAttributes<HTMLUListElement>',
-      'Table': 'React.TableHTMLAttributes<HTMLTableElement>'
+      Button: 'React.ButtonHTMLAttributes<HTMLButtonElement>',
+      Input: 'React.InputHTMLAttributes<HTMLInputElement>',
+      Card: 'React.HTMLAttributes<HTMLDivElement>',
+      Modal: 'React.HTMLAttributes<HTMLDivElement>',
+      Select: 'React.SelectHTMLAttributes<HTMLSelectElement>',
+      Textarea: 'React.TextareaHTMLAttributes<HTMLTextAreaElement>',
+      Link: 'React.AnchorHTMLAttributes<HTMLAnchorElement>',
+      List: 'React.HTMLAttributes<HTMLUListElement>',
+      Table: 'React.TableHTMLAttributes<HTMLTableElement>',
     }
 
-    return propsMap[componentName as keyof typeof propsMap] || 'React.HTMLAttributes<HTMLElement>'
+    return (
+      propsMap[componentName as keyof typeof propsMap] ||
+      'React.HTMLAttributes<HTMLElement>'
+    )
   }
 
   private generateJSDoc(prop: ComponentProp): string {
     const required = prop.required ? '@required' : '@optional'
-    const defaultValue = prop.default ? `@default ${JSON.stringify(prop.default)}` : ''
-    
+    const defaultValue = prop.default
+      ? `@default ${JSON.stringify(prop.default)}`
+      : ''
+
     return `  /**
    * ${prop.description}
    * ${required}
@@ -301,7 +378,7 @@ ${refProps}
     if (component.variants.length === 0) return ''
 
     const variantType = component.variants.map(v => `'${v.name}'`).join(' | ')
-    
+
     return `  /**
    * Visual variant of the component
    * @default 'default'
@@ -313,7 +390,7 @@ ${refProps}
     if (component.sizes.length === 0) return ''
 
     const sizeType = component.sizes.map(s => `'${s}'`).join(' | ')
-    
+
     return `  /**
    * Size of the component
    * @default 'md'
@@ -340,46 +417,85 @@ ${refProps}
 
   private generateEventProps(component: GeneratedComponent): string {
     const eventHandlers = this.getEventHandlers(component.name)
-    
-    return eventHandlers.map(handler => `  /**
+
+    return eventHandlers
+      .map(
+        handler => `  /**
    * ${handler.description}
    */
-  ${handler.name}?: ${handler.type}`).join('\n\n')
+  ${handler.name}?: ${handler.type}`
+      )
+      .join('\n\n')
   }
 
   private generateRefProps(component: GeneratedComponent): string {
     const refType = this.getBaseElement(component.name)
-    
+
     return `  /**
    * Ref to the underlying DOM element
    */
   ref?: React.Ref<${refType}>`
   }
 
-  private getEventHandlers(componentName: string): Array<{ name: string; type: string; description: string }> {
+  private getEventHandlers(
+    componentName: string
+  ): Array<{ name: string; type: string; description: string }> {
     const commonHandlers = [
-      { name: 'onClick', type: '(event: MouseEvent<HTMLElement>) => void', description: 'Click event handler' },
-      { name: 'onFocus', type: '(event: FocusEvent<HTMLElement>) => void', description: 'Focus event handler' },
-      { name: 'onBlur', type: '(event: FocusEvent<HTMLElement>) => void', description: 'Blur event handler' },
-      { name: 'onKeyDown', type: '(event: KeyboardEvent<HTMLElement>) => void', description: 'Key down event handler' }
+      {
+        name: 'onClick',
+        type: '(event: MouseEvent<HTMLElement>) => void',
+        description: 'Click event handler',
+      },
+      {
+        name: 'onFocus',
+        type: '(event: FocusEvent<HTMLElement>) => void',
+        description: 'Focus event handler',
+      },
+      {
+        name: 'onBlur',
+        type: '(event: FocusEvent<HTMLElement>) => void',
+        description: 'Blur event handler',
+      },
+      {
+        name: 'onKeyDown',
+        type: '(event: KeyboardEvent<HTMLElement>) => void',
+        description: 'Key down event handler',
+      },
     ]
 
     const specificHandlers = {
-      'Input': [
-        { name: 'onChange', type: '(event: ChangeEvent<HTMLInputElement>) => void', description: 'Change event handler' },
-        { name: 'onInput', type: '(event: FormEvent<HTMLInputElement>) => void', description: 'Input event handler' }
+      Input: [
+        {
+          name: 'onChange',
+          type: '(event: ChangeEvent<HTMLInputElement>) => void',
+          description: 'Change event handler',
+        },
+        {
+          name: 'onInput',
+          type: '(event: FormEvent<HTMLInputElement>) => void',
+          description: 'Input event handler',
+        },
       ],
-      'Select': [
-        { name: 'onChange', type: '(event: ChangeEvent<HTMLSelectElement>) => void', description: 'Change event handler' }
+      Select: [
+        {
+          name: 'onChange',
+          type: '(event: ChangeEvent<HTMLSelectElement>) => void',
+          description: 'Change event handler',
+        },
       ],
-      'Textarea': [
-        { name: 'onChange', type: '(event: ChangeEvent<HTMLTextAreaElement>) => void', description: 'Change event handler' }
-      ]
+      Textarea: [
+        {
+          name: 'onChange',
+          type: '(event: ChangeEvent<HTMLTextAreaElement>) => void',
+          description: 'Change event handler',
+        },
+      ],
     }
 
     return [
       ...commonHandlers,
-      ...(specificHandlers[componentName as keyof typeof specificHandlers] || [])
+      ...(specificHandlers[componentName as keyof typeof specificHandlers] ||
+        []),
     ]
   }
 }
@@ -389,7 +505,7 @@ class UnionTypeGenerator {
     if (component.variants.length === 0) return ''
 
     const variants = component.variants.map(v => `'${v.name}'`).join(' | ')
-    
+
     return `/** Available variants for ${component.name} */
 export type ${component.name}Variant = ${variants}`
   }
@@ -398,33 +514,36 @@ export type ${component.name}Variant = ${variants}`
     if (component.sizes.length === 0) return ''
 
     const sizes = component.sizes.map(s => `'${s}'`).join(' | ')
-    
+
     return `/** Available sizes for ${component.name} */
 export type ${component.name}Size = ${sizes}`
   }
 
   generateStateTypes(component: GeneratedComponent): string {
     const states = component.states.map(s => `'${s}'`).join(' | ')
-    
+
     return `/** Available states for ${component.name} */
 export type ${component.name}State = ${states}`
   }
 }
 
 class EnumGenerator {
-  generateEnums(component: GeneratedComponent, designSystem: DesignSystemConfig): string {
+  generateEnums(
+    component: GeneratedComponent,
+    designSystem: DesignSystemConfig
+  ): string {
     const variantEnum = this.generateVariantEnum(component)
     const sizeEnum = this.generateSizeEnum(component)
-    
+
     return `${variantEnum}\n\n${sizeEnum}`
   }
 
   private generateVariantEnum(component: GeneratedComponent): string {
     if (component.variants.length === 0) return ''
 
-    const enumValues = component.variants.map(variant => 
-      `  ${variant.name.toUpperCase()} = '${variant.name}'`
-    ).join(',\n')
+    const enumValues = component.variants
+      .map(variant => `  ${variant.name.toUpperCase()} = '${variant.name}'`)
+      .join(',\n')
 
     return `/** ${component.name} variant enum */
 export enum ${component.name}Variant {
@@ -435,9 +554,9 @@ ${enumValues}
   private generateSizeEnum(component: GeneratedComponent): string {
     if (component.sizes.length === 0) return ''
 
-    const enumValues = component.sizes.map(size => 
-      `  ${size.toUpperCase()} = '${size}'`
-    ).join(',\n')
+    const enumValues = component.sizes
+      .map(size => `  ${size.toUpperCase()} = '${size}'`)
+      .join(',\n')
 
     return `/** ${component.name} size enum */
 export enum ${component.name}Size {
@@ -477,12 +596,16 @@ export type ${component.name}WithDefaults = ${component.name}Props & Required<${
   }
 
   private getRequiredProps(component: GeneratedComponent): string {
-    const required = component.props.filter(p => p.required).map(p => `'${p.name}'`)
+    const required = component.props
+      .filter(p => p.required)
+      .map(p => `'${p.name}'`)
     return required.length > 0 ? required.join(' | ') : 'never'
   }
 
   private getOptionalProps(component: GeneratedComponent): string {
-    const optional = component.props.filter(p => !p.required).map(p => `'${p.name}'`)
+    const optional = component.props
+      .filter(p => !p.required)
+      .map(p => `'${p.name}'`)
     return optional.length > 0 ? optional.join(' | ') : 'never'
   }
 }
@@ -501,9 +624,9 @@ export interface ${component.name}EventHandlers {
 
   private getSpecificEventHandlers(componentName: string): string {
     const handlers = {
-      'Input': 'onChange?: (event: ChangeEvent<HTMLInputElement>) => void',
-      'Select': 'onChange?: (event: ChangeEvent<HTMLSelectElement>) => void',
-      'Textarea': 'onChange?: (event: ChangeEvent<HTMLTextAreaElement>) => void'
+      Input: 'onChange?: (event: ChangeEvent<HTMLInputElement>) => void',
+      Select: 'onChange?: (event: ChangeEvent<HTMLSelectElement>) => void',
+      Textarea: 'onChange?: (event: ChangeEvent<HTMLTextAreaElement>) => void',
     }
 
     return handlers[componentName as keyof typeof handlers] || ''
@@ -513,7 +636,7 @@ export interface ${component.name}EventHandlers {
 class RefTypeGenerator {
   generateRefTypes(component: GeneratedComponent): string {
     const elementType = this.getElementType(component.name)
-    
+
     return `/** Ref types for ${component.name} */
 export type ${component.name}Ref = React.Ref<${elementType}>
 
@@ -522,15 +645,15 @@ export type ${component.name}Element = ${elementType}`
 
   private getElementType(componentName: string): string {
     const elementMap = {
-      'Button': 'HTMLButtonElement',
-      'Input': 'HTMLInputElement',
-      'Card': 'HTMLDivElement',
-      'Modal': 'HTMLDivElement',
-      'Select': 'HTMLSelectElement',
-      'Textarea': 'HTMLTextAreaElement',
-      'Link': 'HTMLAnchorElement',
-      'List': 'HTMLUListElement',
-      'Table': 'HTMLTableElement'
+      Button: 'HTMLButtonElement',
+      Input: 'HTMLInputElement',
+      Card: 'HTMLDivElement',
+      Modal: 'HTMLDivElement',
+      Select: 'HTMLSelectElement',
+      Textarea: 'HTMLTextAreaElement',
+      Link: 'HTMLAnchorElement',
+      List: 'HTMLUListElement',
+      Table: 'HTMLTableElement',
     }
 
     return elementMap[componentName as keyof typeof elementMap] || 'HTMLElement'

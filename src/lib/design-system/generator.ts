@@ -45,14 +45,17 @@ export class DesignSystemGenerator {
       status: 'pending',
       progress: 0,
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     }
 
     this.activeGenerations.set(generationId, generation)
 
     try {
       // Start generation process
-      this.updateGeneration(generationId, { status: 'processing', progress: 10 })
+      this.updateGeneration(generationId, {
+        status: 'processing',
+        progress: 10,
+      })
 
       // Build prompt
       const prompt = createDesignSystemPrompt(requirements)
@@ -65,7 +68,13 @@ export class DesignSystemGenerator {
       // Validate response
       let designSystem: GeneratedDesignSystem
       if (options.validateOutput !== false) {
-        designSystem = await validateDesignSystemResponse(response)
+        const validationResult = validateDesignSystemResponse(response)
+        if (!validationResult.isValid) {
+          throw new Error(
+            `Validation failed: ${validationResult.errors.join(', ')}`
+          )
+        }
+        designSystem = JSON.parse(response)
         this.updateGeneration(generationId, { progress: 80 })
       } else {
         designSystem = JSON.parse(response)
@@ -76,42 +85,47 @@ export class DesignSystemGenerator {
         version: '1.0.0',
         generatedAt: new Date().toISOString(),
         totalComponents: designSystem.components.length,
-        categories: [...new Set(designSystem.components.map(c => c.category))]
+        categories: [...new Set(designSystem.components.map(c => c.category))],
       }
 
       // Complete generation
       this.updateGeneration(generationId, {
         status: 'completed',
         progress: 100,
-        designSystem
+        designSystem,
       })
 
       return generationId
     } catch (error) {
       this.updateGeneration(generationId, {
         status: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        error:
+          error instanceof Error ? error.message : 'Unknown error occurred',
       })
       throw error
     }
   }
 
-  private async callOpenAI(prompt: string, options: GenerationOptions): Promise<string> {
+  private async callOpenAI(
+    prompt: string,
+    options: GenerationOptions
+  ): Promise<string> {
     const response = await openai.chat.completions.create({
       model: options.model || 'gpt-4',
       messages: [
         {
           role: 'system',
-          content: 'You are an expert design system architect. Generate comprehensive, production-ready design systems with perfect JSON output.'
+          content:
+            'You are an expert design system architect. Generate comprehensive, production-ready design systems with perfect JSON output.',
         },
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       temperature: options.temperature || 0.7,
       max_tokens: options.maxTokens || 4000,
-      response_format: { type: 'json_object' }
+      response_format: { type: 'json_object' },
     })
 
     const content = response.choices[0]?.message?.content
@@ -122,10 +136,15 @@ export class DesignSystemGenerator {
     return content
   }
 
-  private updateGeneration(id: string, updates: Partial<DesignSystemGeneration>) {
+  private updateGeneration(
+    id: string,
+    updates: Partial<DesignSystemGeneration>
+  ) {
     const generation = this.activeGenerations.get(id)
     if (generation) {
-      Object.assign(generation, updates, { updatedAt: new Date().toISOString() })
+      Object.assign(generation, updates, {
+        updatedAt: new Date().toISOString(),
+      })
       this.activeGenerations.set(id, generation)
     }
   }
@@ -134,9 +153,13 @@ export class DesignSystemGenerator {
     return this.activeGenerations.get(id)
   }
 
-  getGenerationStatus(id: string): { status: string; progress: number } | undefined {
+  getGenerationStatus(
+    id: string
+  ): { status: string; progress: number } | undefined {
     const generation = this.activeGenerations.get(id)
-    return generation ? { status: generation.status, progress: generation.progress } : undefined
+    return generation
+      ? { status: generation.status, progress: generation.progress }
+      : undefined
   }
 
   listActiveGenerations(): DesignSystemGeneration[] {
@@ -146,7 +169,10 @@ export class DesignSystemGenerator {
   cancelGeneration(id: string): boolean {
     const generation = this.activeGenerations.get(id)
     if (generation && generation.status === 'processing') {
-      this.updateGeneration(id, { status: 'error', error: 'Generation cancelled by user' })
+      this.updateGeneration(id, {
+        status: 'error',
+        error: 'Generation cancelled by user',
+      })
       return true
     }
     return false

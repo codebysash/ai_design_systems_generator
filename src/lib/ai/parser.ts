@@ -1,5 +1,34 @@
 import { z } from 'zod'
-import { DesignSystemConfig, GeneratedComponent } from '@/types'
+import { DesignSystemConfig, GeneratedComponent, ColorScale } from '@/types'
+
+// Helper function to convert a single color string to a ColorScale
+function generateColorScale(baseColor: string): ColorScale {
+  // This is a simplified implementation. In production, you'd use a proper color library
+  // to generate proper color scales with correct luminance values
+  return {
+    '50': lightenColor(baseColor, 0.95),
+    '100': lightenColor(baseColor, 0.9),
+    '200': lightenColor(baseColor, 0.8),
+    '300': lightenColor(baseColor, 0.6),
+    '400': lightenColor(baseColor, 0.3),
+    '500': baseColor,
+    '600': darkenColor(baseColor, 0.1),
+    '700': darkenColor(baseColor, 0.2),
+    '800': darkenColor(baseColor, 0.3),
+    '900': darkenColor(baseColor, 0.4),
+  }
+}
+
+// Simple color manipulation helpers (for production, use a proper color library)
+function lightenColor(color: string, amount: number): string {
+  // Simple implementation - in production, use a proper color library like chroma.js
+  return color // Return original color for now
+}
+
+function darkenColor(color: string, amount: number): string {
+  // Simple implementation - in production, use a proper color library like chroma.js
+  return color // Return original color for now
+}
 
 // Zod schemas for parsing AI responses
 const colorSchema = z.object({
@@ -115,15 +144,92 @@ export function parseDesignSystemResponse(
       description: validated.designSystem.description,
       style: 'modern', // Default, will be overridden by actual style
       colors: {
-        primary: validated.designSystem.colors.primary,
-        secondary: validated.designSystem.colors.secondary,
-        accent: validated.designSystem.colors.accent,
-        background: validated.designSystem.colors.background,
-        foreground: validated.designSystem.colors.foreground,
+        primary: generateColorScale(validated.designSystem.colors.primary),
+        secondary: generateColorScale(validated.designSystem.colors.secondary),
+        accent: generateColorScale(validated.designSystem.colors.accent),
+        neutral: generateColorScale(validated.designSystem.colors.background),
+        semantic: {
+          success: '#22c55e',
+          warning: '#f59e0b',
+          error: '#ef4444',
+          info: '#3b82f6',
+        },
       },
-      typography: validated.designSystem.typography,
+      typography: {
+        headingFont: validated.designSystem.typography.headingFont,
+        bodyFont: validated.designSystem.typography.bodyFont,
+        monoFont: 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
+        scale: {
+          xs: validated.designSystem.typography.scale?.xs || '0.75rem',
+          sm: validated.designSystem.typography.scale?.sm || '0.875rem',
+          base: validated.designSystem.typography.scale?.base || '1rem',
+          lg: validated.designSystem.typography.scale?.lg || '1.125rem',
+          xl: validated.designSystem.typography.scale?.xl || '1.25rem',
+          '2xl': validated.designSystem.typography.scale?.['2xl'] || '1.5rem',
+          '3xl': validated.designSystem.typography.scale?.['3xl'] || '1.875rem',
+          '4xl': '2.25rem',
+          '5xl': '3rem',
+          '6xl': '3.75rem',
+        },
+        lineHeight: {
+          tight: 1.25,
+          snug: 1.375,
+          normal: 1.5,
+          relaxed: 1.625,
+          loose: 2,
+        },
+        letterSpacing: {
+          tight: '-0.025em',
+          normal: '0em',
+          wide: '0.025em',
+        },
+        fontWeight: {
+          light: 300,
+          normal: 400,
+          medium: 500,
+          semibold: 600,
+          bold: 700,
+        },
+      },
       spacing: validated.designSystem.spacing,
-      borderRadius: validated.designSystem.borderRadius,
+      borderRadius: {
+        none: '0px',
+        sm: validated.designSystem.borderRadius.sm,
+        md: validated.designSystem.borderRadius.md,
+        lg: validated.designSystem.borderRadius.lg,
+        xl: validated.designSystem.borderRadius.xl || '0.75rem',
+        '2xl': '1rem',
+        '3xl': '1.5rem',
+        full: '9999px',
+      },
+      shadows: {
+        sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+        md: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        lg: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+        xl: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+        '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+        inner: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)',
+      },
+      animation: {
+        transition: {
+          fast: '150ms',
+          normal: '200ms',
+          slow: '300ms',
+        },
+        easing: {
+          ease: 'cubic-bezier(0.25, 0.1, 0.25, 1)',
+          easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
+          easeOut: 'cubic-bezier(0, 0, 0.2, 1)',
+          easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        },
+      },
+      breakpoints: {
+        sm: '640px',
+        md: '768px',
+        lg: '1024px',
+        xl: '1280px',
+        '2xl': '1536px',
+      },
     }
   } catch (error) {
     console.error('Error parsing design system response:', error)
@@ -142,9 +248,14 @@ export function parseComponentResponse(response: string): GeneratedComponent {
 
     return {
       name: validated.component.name,
+      category: 'general',
       code: validated.component.code,
       props: validated.component.props,
       variants: validated.component.variants,
+      sizes: ['sm', 'md', 'lg'],
+      description: `A ${validated.component.name} component`,
+      accessibility: ['keyboard-navigation', 'aria-labels', 'focus-visible'],
+      states: ['default', 'hover', 'active', 'disabled'],
     }
   } catch (error) {
     console.error('Error parsing component response:', error)

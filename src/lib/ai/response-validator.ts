@@ -160,8 +160,8 @@ export function validateDesignSystemResponse(data: any): ValidationResult {
     return result
   } catch (error) {
     if (error instanceof z.ZodError) {
-      result.errors = error.errors.map(
-        err => `${err.path.join('.')}: ${err.message}`
+      result.errors = error.issues.map(
+        (err: any) => `${err.path.join('.')}: ${err.message}`
       )
     } else {
       result.errors.push(
@@ -328,5 +328,3 @@ export function handleResponseErrors(content: string): string[] {
 
   return issues
 }
-
-export type { ValidationResult, ResponseParseResult }
