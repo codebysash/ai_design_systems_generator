@@ -79,7 +79,7 @@ const componentPropSchema = z.object({
 
 const componentVariantSchema = z.object({
   name: z.string(),
-  props: z.record(z.any()),
+  props: z.record(z.string(), z.any()),
   description: z.string(),
 })
 

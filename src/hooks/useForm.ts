@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 export function useForm<T extends z.ZodType<any, any>>(schema: T) {
   return useReactHookForm<z.infer<T>>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     mode: 'onChange',
   })
 }
