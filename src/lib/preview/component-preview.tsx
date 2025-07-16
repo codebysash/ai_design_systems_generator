@@ -1,12 +1,19 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, memo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GeneratedComponent, DesignSystemConfig } from '@/types'
 import { componentCodeGenerator } from '@/lib/design-system/code-generator'
 import { variantSystemGenerator } from '@/lib/design-system/variants'
 import { themeGenerator } from '@/lib/design-system/themes'
 import { cn } from '@/lib/utils'
+import { 
+  useComputedStyles, 
+  useDebounced, 
+  usePerformanceMonitor,
+  componentPropsEqual,
+  PreviewErrorBoundary
+} from './performance-utils'
 
 export interface ComponentPreviewProps {
   component: GeneratedComponent
@@ -27,7 +34,7 @@ export interface ComponentPreviewProps {
   onStateChange?: (state: Record<string, any>) => void
 }
 
-export const ComponentPreview: React.FC<ComponentPreviewProps> = ({
+const ComponentPreviewImpl: React.FC<ComponentPreviewProps> = ({
   component,
   designSystem,
   theme = 'light',
@@ -41,55 +48,67 @@ export const ComponentPreview: React.FC<ComponentPreviewProps> = ({
   onSizeChange,
   onStateChange
 }) => {
+  // Performance monitoring
+  usePerformanceMonitor(`ComponentPreview-${component.name}`)
+  
   const [isRendering, setIsRendering] = useState(false)
   const [renderError, setRenderError] = useState<string | null>(null)
   const [componentCode, setComponentCode] = useState<string>('')
 
-  // Generate variant system for the component
+  // Debounce expensive prop changes to reduce re-renders
+  const debouncedVariant = useDebounced(variant, 100)
+  const debouncedSize = useDebounced(size, 100)
+  const debouncedState = useDebounced(state, 150)
+
+  // Memoized computed styles
+  const computedStyles = useComputedStyles(component, debouncedVariant, debouncedSize, designSystem)
+
+  // Generate variant system for the component (memoized)
   const variantSystem = useMemo(() => {
     return variantSystemGenerator.generateVariantSystem(component, designSystem)
-  }, [component, designSystem])
+  }, [component.name, designSystem.colors, designSystem.typography])
 
-  // Generate theme for the component
+  // Generate theme for the component (memoized)
   const componentTheme = useMemo(() => {
     return themeGenerator.generateTheme(designSystem, theme)
-  }, [designSystem, theme])
+  }, [designSystem.colors, designSystem.typography, designSystem.spacing, theme])
 
-  // Generate component code
-  useEffect(() => {
-    const generateCode = async () => {
-      setIsRendering(true)
-      setRenderError(null)
+  // Memoized code generation callback
+  const generateCodeMemoized = useCallback(async () => {
+    setIsRendering(true)
+    setRenderError(null)
 
-      try {
-        const generatedCode = componentCodeGenerator.generateComponent(
-          component,
-          designSystem,
-          {
-            framework: 'react',
-            language: 'typescript',
-            cssFramework: 'tailwind',
-            includeTests: false,
-            includeStories: false,
-            includeDocumentation: false,
-            accessibility: true,
-            variant: 'compound'
-          }
-        )
+    try {
+      const generatedCode = componentCodeGenerator.generateComponent(
+        component,
+        designSystem,
+        {
+          framework: 'react',
+          language: 'typescript',
+          cssFramework: 'tailwind',
+          includeTests: false,
+          includeStories: false,
+          includeDocumentation: false,
+          accessibility: true,
+          variant: 'compound'
+        }
+      )
 
-        setComponentCode(generatedCode.component)
-      } catch (error) {
-        setRenderError(error instanceof Error ? error.message : 'Failed to generate component')
-      } finally {
-        setIsRendering(false)
-      }
+      setComponentCode(generatedCode.component)
+    } catch (error) {
+      setRenderError(error instanceof Error ? error.message : 'Failed to generate component')
+    } finally {
+      setIsRendering(false)
     }
+  }, [component.name, designSystem.colors, designSystem.typography])
 
-    generateCode()
-  }, [component, designSystem, variant, size, state])
+  // Generate component code with debounced triggers
+  useEffect(() => {
+    generateCodeMemoized()
+  }, [generateCodeMemoized, debouncedVariant, debouncedSize, debouncedState])
 
-  // Dynamic component renderer
-  const renderComponent = () => {
+  // Memoized dynamic component renderer
+  const renderComponent = useMemo(() => {
     if (renderError) {
       return (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -108,44 +127,55 @@ export const ComponentPreview: React.FC<ComponentPreviewProps> = ({
       )
     }
 
-    // Render component based on type
-    return <DynamicComponentRenderer
+    // Render component based on type with memoization
+    return <MemoizedDynamicComponentRenderer
       component={component}
-      variant={variant}
-      size={size}
-      state={state}
+      variant={debouncedVariant}
+      size={debouncedSize}
+      state={debouncedState}
       props={props}
       theme={componentTheme}
       className={className}
+      computedStyles={computedStyles}
     />
-  }
+  }, [renderError, isRendering, component, debouncedVariant, debouncedSize, debouncedState, props, componentTheme, className, computedStyles])
 
   return (
-    <div className="relative">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={`${component.name}-${variant}-${size}-${JSON.stringify(state)}`}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2 }}
-          className="min-h-[100px] flex items-center justify-center p-4"
-        >
-          {renderComponent()}
-        </motion.div>
-      </AnimatePresence>
+    <PreviewErrorBoundary>
+      <div className="relative">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${component.name}-${debouncedVariant}-${debouncedSize}-${JSON.stringify(debouncedState)}`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.15 }}
+            className="min-h-[100px] flex items-center justify-center p-4"
+          >
+            {renderComponent}
+          </motion.div>
+        </AnimatePresence>
 
-      {/* Theme variables */}
-      <style jsx global>{`
-        :root {
-          ${Object.entries(componentTheme.cssVariables)
-            .map(([key, value]) => `${key}: ${value};`)
-            .join('\n          ')}
-        }
-      `}</style>
-    </div>
+        {/* Optimized theme variables injection */}
+        <OptimizedThemeVariables theme={componentTheme} />
+      </div>
+    </PreviewErrorBoundary>
   )
 }
+
+// Memoized theme variables component
+const OptimizedThemeVariables = memo<{ theme: any }>(({ theme }) => (
+  <style jsx global>{`
+    :root {
+      ${Object.entries(theme.cssVariables || {})
+        .map(([key, value]) => `${key}: ${value};`)
+        .join('\n      ')}
+    }
+  `}</style>
+))
+
+// Export memoized component with custom comparison
+export const ComponentPreview = memo(ComponentPreviewImpl, componentPropsEqual)
 
 interface DynamicComponentRendererProps {
   component: GeneratedComponent
@@ -155,54 +185,73 @@ interface DynamicComponentRendererProps {
   props: Record<string, any>
   theme: any
   className?: string
+  computedStyles?: any
 }
 
-const DynamicComponentRenderer: React.FC<DynamicComponentRendererProps> = ({
+const DynamicComponentRendererImpl: React.FC<DynamicComponentRendererProps> = ({
   component,
   variant,
   size,
   state,
   props,
   theme,
-  className
+  className,
+  computedStyles
 }) => {
-  const baseProps = {
+  const baseProps = useMemo(() => ({
     variant,
     size,
     ...state,
     ...props,
-    className: cn(className)
-  }
+    className: cn(className),
+    style: computedStyles?.combined
+  }), [variant, size, state, props, className, computedStyles])
 
-  switch (component.name) {
-    case 'Button':
-      return <ButtonPreview {...baseProps} />
-    case 'Input':
-      return <InputPreview {...baseProps} />
-    case 'Card':
-      return <CardPreview {...baseProps} />
-    case 'Select':
-      return <SelectPreview {...baseProps} />
-    case 'Textarea':
-      return <TextareaPreview {...baseProps} />
-    case 'Checkbox':
-      return <CheckboxPreview {...baseProps} />
-    case 'Radio':
-      return <RadioPreview {...baseProps} />
-    case 'Switch':
-      return <SwitchPreview {...baseProps} />
-    case 'Alert':
-      return <AlertPreview {...baseProps} />
-    case 'Badge':
-      return <BadgePreview {...baseProps} />
-    case 'Avatar':
-      return <AvatarPreview {...baseProps} />
-    case 'Progress':
-      return <ProgressPreview {...baseProps} />
-    default:
-      return <DefaultComponentPreview {...baseProps} componentName={component.name} />
-  }
+  const ComponentToRender = useMemo(() => {
+    switch (component.name) {
+      case 'Button':
+        return <MemoizedButtonPreview {...baseProps} />
+      case 'Input':
+        return <MemoizedInputPreview {...baseProps} />
+      case 'Card':
+        return <MemoizedCardPreview {...baseProps} />
+      case 'Select':
+        return <MemoizedSelectPreview {...baseProps} />
+      case 'Textarea':
+        return <MemoizedTextareaPreview {...baseProps} />
+      case 'Checkbox':
+        return <MemoizedCheckboxPreview {...baseProps} />
+      case 'Radio':
+        return <MemoizedRadioPreview {...baseProps} />
+      case 'Switch':
+        return <MemoizedSwitchPreview {...baseProps} />
+      case 'Alert':
+        return <MemoizedAlertPreview {...baseProps} />
+      case 'Badge':
+        return <MemoizedBadgePreview {...baseProps} />
+      case 'Avatar':
+        return <MemoizedAvatarPreview {...baseProps} />
+      case 'Progress':
+        return <MemoizedProgressPreview {...baseProps} />
+      default:
+        return <MemoizedDefaultComponentPreview {...baseProps} componentName={component.name} />
+    }
+  }, [component.name, baseProps])
+
+  return ComponentToRender
 }
+
+// Memoized version with optimized comparison
+const MemoizedDynamicComponentRenderer = memo(DynamicComponentRendererImpl, (prevProps, nextProps) => {
+  return (
+    prevProps.component.name === nextProps.component.name &&
+    prevProps.variant === nextProps.variant &&
+    prevProps.size === nextProps.size &&
+    JSON.stringify(prevProps.state) === JSON.stringify(nextProps.state) &&
+    JSON.stringify(prevProps.props) === JSON.stringify(nextProps.props) &&
+    prevProps.className === nextProps.className
+  )
+})
 
 // Component preview implementations
 const ButtonPreview: React.FC<any> = ({ variant, size, loading, disabled, className, ...props }) => {
@@ -576,3 +625,18 @@ const DefaultComponentPreview: React.FC<any> = ({ componentName, variant, size, 
     </div>
   )
 }
+
+// Memoized component versions for better performance
+const MemoizedButtonPreview = memo(ButtonPreview)
+const MemoizedInputPreview = memo(InputPreview)
+const MemoizedCardPreview = memo(CardPreview)
+const MemoizedSelectPreview = memo(SelectPreview)
+const MemoizedTextareaPreview = memo(TextareaPreview)
+const MemoizedCheckboxPreview = memo(CheckboxPreview)
+const MemoizedRadioPreview = memo(RadioPreview)
+const MemoizedSwitchPreview = memo(SwitchPreview)
+const MemoizedAlertPreview = memo(AlertPreview)
+const MemoizedBadgePreview = memo(BadgePreview)
+const MemoizedAvatarPreview = memo(AvatarPreview)
+const MemoizedProgressPreview = memo(ProgressPreview)
+const MemoizedDefaultComponentPreview = memo(DefaultComponentPreview)

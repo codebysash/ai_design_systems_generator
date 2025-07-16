@@ -1,9 +1,8 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, memo, useCallback, lazy, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GeneratedComponent, DesignSystemConfig } from '@/types'
-import { ComponentPreview } from './component-preview'
 import { PreviewControls } from './preview-controls'
 import { ResponsivePreview } from './responsive-preview'
 import { ThemeSwitcher } from './theme-switcher'
@@ -18,6 +17,19 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
+import { 
+  useVirtualizedComponents, 
+  useThrottledCallback, 
+  useDebounced,
+  PreviewErrorBoundary
+} from './performance-utils'
+
+// Lazy load ComponentPreview for better initial load performance
+const LazyComponentPreview = lazy(() => 
+  import('./component-preview').then(module => ({
+    default: module.ComponentPreview
+  }))
+)
 
 export interface ComponentPlaygroundProps {
   components: GeneratedComponent[]
@@ -30,7 +42,7 @@ export interface ComponentPlaygroundProps {
   allowMultipleComponents?: boolean
 }
 
-export const ComponentPlayground: React.FC<ComponentPlaygroundProps> = ({
+const ComponentPlaygroundImpl: React.FC<ComponentPlaygroundProps> = ({
   components,
   designSystem,
   className,
@@ -41,7 +53,7 @@ export const ComponentPlayground: React.FC<ComponentPlaygroundProps> = ({
   allowMultipleComponents = false
 }) => {
   const [selectedComponent, setSelectedComponent] = useState<GeneratedComponent>(
-    components.find(c => c.name === defaultComponent) || components[0]
+    () => components.find(c => c.name === defaultComponent) || components[0]
   )
   const [variant, setVariant] = useState<string>(selectedComponent?.variants[0]?.name || 'default')
   const [size, setSize] = useState<string>(selectedComponent?.sizes[0] || 'md')
@@ -53,6 +65,11 @@ export const ComponentPlayground: React.FC<ComponentPlaygroundProps> = ({
   const [multipleComponents, setMultipleComponents] = useState<GeneratedComponent[]>([])
   const [playgroundLayout, setPlaygroundLayout] = useState<'horizontal' | 'vertical'>('horizontal')
 
+  // Debounce frequently changing values
+  const debouncedVariant = useDebounced(variant, 150)
+  const debouncedSize = useDebounced(size, 150)
+  const debouncedState = useDebounced(state, 200)
+
   // Reset variant and size when component changes
   useEffect(() => {
     setVariant(selectedComponent?.variants[0]?.name || 'default')
@@ -61,31 +78,33 @@ export const ComponentPlayground: React.FC<ComponentPlaygroundProps> = ({
     setProps({})
   }, [selectedComponent])
 
-  const handleComponentChange = (componentName: string) => {
+  // Throttled handlers for better performance
+  const handleComponentChange = useThrottledCallback((componentName: string) => {
     const component = components.find(c => c.name === componentName)
     if (component) {
       setSelectedComponent(component)
     }
-  }
+  }, 100)
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setVariant(selectedComponent?.variants[0]?.name || 'default')
     setSize(selectedComponent?.sizes[0] || 'md')
     setState({})
     setProps({})
-  }
+  }, [selectedComponent])
 
-  const handleAddComponent = (componentName: string) => {
+  const handleAddComponent = useCallback((componentName: string) => {
     const component = components.find(c => c.name === componentName)
     if (component && !multipleComponents.find(c => c.name === componentName)) {
-      setMultipleComponents([...multipleComponents, component])
+      setMultipleComponents(prev => [...prev, component])
     }
-  }
+  }, [components, multipleComponents])
 
-  const handleRemoveComponent = (componentName: string) => {
-    setMultipleComponents(multipleComponents.filter(c => c.name !== componentName))
-  }
+  const handleRemoveComponent = useCallback((componentName: string) => {
+    setMultipleComponents(prev => prev.filter(c => c.name !== componentName))
+  }, [])
 
+  // Optimized preview content with lazy loading and error boundaries
   const previewContent = useMemo(() => {
     if (allowMultipleComponents && multipleComponents.length > 0) {
       return (
@@ -101,15 +120,19 @@ export const ComponentPlayground: React.FC<ComponentPlaygroundProps> = ({
                   Remove
                 </Button>
               </div>
-              <ComponentPreview
-                component={component}
-                designSystem={designSystem}
-                theme={theme}
-                variant={component.variants[0]?.name || 'default'}
-                size={component.sizes[0] || 'md'}
-                state={state}
-                props={props}
-              />
+              <PreviewErrorBoundary>
+                <Suspense fallback={<PreviewLoadingSkeleton />}>
+                  <LazyComponentPreview
+                    component={component}
+                    designSystem={designSystem}
+                    theme={theme}
+                    variant={component.variants[0]?.name || 'default'}
+                    size={component.sizes[0] || 'md'}
+                    state={debouncedState}
+                    props={props}
+                  />
+                </Suspense>
+              </PreviewErrorBoundary>
             </div>
           ))}
         </div>
@@ -117,21 +140,35 @@ export const ComponentPlayground: React.FC<ComponentPlaygroundProps> = ({
     }
 
     return (
-      <ComponentPreview
-        component={selectedComponent}
-        designSystem={designSystem}
-        theme={theme}
-        variant={variant}
-        size={size}
-        state={state}
-        props={props}
-        onVariantChange={setVariant}
-        onSizeChange={setSize}
-        onStateChange={setState}
-        onPropsChange={setProps}
-      />
+      <PreviewErrorBoundary>
+        <Suspense fallback={<PreviewLoadingSkeleton />}>
+          <LazyComponentPreview
+            component={selectedComponent}
+            designSystem={designSystem}
+            theme={theme}
+            variant={debouncedVariant}
+            size={debouncedSize}
+            state={debouncedState}
+            props={props}
+            onVariantChange={setVariant}
+            onSizeChange={setSize}
+            onStateChange={setState}
+            onPropsChange={setProps}
+          />
+        </Suspense>
+      </PreviewErrorBoundary>
     )
-  }, [selectedComponent, designSystem, theme, variant, size, state, props, allowMultipleComponents, multipleComponents])
+  }, [selectedComponent, designSystem, theme, debouncedVariant, debouncedSize, debouncedState, props, allowMultipleComponents, multipleComponents, handleRemoveComponent])
+
+  // Loading skeleton component for better UX
+  const PreviewLoadingSkeleton = () => (
+    <div className="min-h-[100px] flex items-center justify-center p-4">
+      <div className="animate-pulse space-y-2">
+        <div className="h-4 bg-gray-300 rounded w-20"></div>
+        <div className="h-8 bg-gray-300 rounded w-32"></div>
+      </div>
+    </div>
+  )
 
   return (
     <ThemeProvider designSystem={designSystem} defaultTheme={theme}>
@@ -603,5 +640,16 @@ const generateTokensCode = (designSystem: DesignSystemConfig): string => {
     borderRadius: designSystem.borderRadius
   }, null, 2)
 }
+
+// Memoized ComponentPlayground for better performance
+export const ComponentPlayground = memo(ComponentPlaygroundImpl, (prevProps, nextProps) => {
+  return (
+    prevProps.components.length === nextProps.components.length &&
+    prevProps.components.every((comp, index) => comp.name === nextProps.components[index]?.name) &&
+    JSON.stringify(prevProps.designSystem.colors) === JSON.stringify(nextProps.designSystem.colors) &&
+    JSON.stringify(prevProps.designSystem.typography) === JSON.stringify(nextProps.designSystem.typography) &&
+    prevProps.defaultComponent === nextProps.defaultComponent
+  )
+})
 
 export default ComponentPlayground

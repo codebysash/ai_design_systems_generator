@@ -1,4 +1,8 @@
 import '@testing-library/jest-dom'
+import React from 'react'
+
+// Make React available globally for JSX
+global.React = React
 
 // Mock environment variables for tests
 process.env.OPENAI_API_KEY = 'test-api-key'

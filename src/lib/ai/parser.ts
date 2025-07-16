@@ -21,13 +21,31 @@ function generateColorScale(baseColor: string): ColorScale {
 
 // Simple color manipulation helpers (for production, use a proper color library)
 function lightenColor(color: string, amount: number): string {
-  // Simple implementation - in production, use a proper color library like chroma.js
-  return color // Return original color for now
+  // Simple implementation for testing
+  const hex = color.replace('#', '')
+  const r = parseInt(hex.substr(0, 2), 16)
+  const g = parseInt(hex.substr(2, 2), 16)
+  const b = parseInt(hex.substr(4, 2), 16)
+  
+  const newR = Math.min(255, Math.round(r + (255 - r) * amount))
+  const newG = Math.min(255, Math.round(g + (255 - g) * amount))
+  const newB = Math.min(255, Math.round(b + (255 - b) * amount))
+  
+  return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`
 }
 
 function darkenColor(color: string, amount: number): string {
-  // Simple implementation - in production, use a proper color library like chroma.js
-  return color // Return original color for now
+  // Simple implementation for testing
+  const hex = color.replace('#', '')
+  const r = parseInt(hex.substr(0, 2), 16)
+  const g = parseInt(hex.substr(2, 2), 16)
+  const b = parseInt(hex.substr(4, 2), 16)
+  
+  const newR = Math.max(0, Math.round(r * (1 - amount)))
+  const newG = Math.max(0, Math.round(g * (1 - amount)))
+  const newB = Math.max(0, Math.round(b * (1 - amount)))
+  
+  return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`
 }
 
 // Zod schemas for parsing AI responses
@@ -290,3 +308,129 @@ export function validateJsonResponse(response: string): boolean {
     return false
   }
 }
+
+// Additional functions expected by tests
+export function parseAIResponse(response: string): { success: boolean; data?: any; errors: string[] } {
+  try {
+    const cleanedResponse = cleanJsonResponse(response)
+    const data = JSON.parse(cleanedResponse)
+    return { success: true, data, errors: [] }
+  } catch (error) {
+    return { 
+      success: false, 
+      errors: ['Invalid JSON format'] 
+    }
+  }
+}
+
+export function validateDesignSystemResponse(data: any): { isValid: boolean; errors: string[]; data?: DesignSystemConfig } {
+  const errors: string[] = []
+  
+  if (!data.name) {
+    errors.push('Missing required field: name')
+  }
+  
+  if (!data.colors) {
+    errors.push('Missing required field: colors')
+  } else {
+    // Validate color scale structure
+    Object.entries(data.colors).forEach(([colorName, colorValue]) => {
+      if (typeof colorValue === 'string') {
+        errors.push(`Invalid color scale structure for ${colorName}`)
+      }
+    })
+  }
+  
+  if (!data.typography) {
+    errors.push('Missing required field: typography')
+  }
+  
+  if (!data.spacing) {
+    errors.push('Missing required field: spacing')
+  }
+  
+  if (!data.borderRadius) {
+    errors.push('Missing required field: borderRadius')
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    data: errors.length === 0 ? data as DesignSystemConfig : undefined
+  }
+}
+
+export function sanitizeResponse(data: any): DesignSystemConfig {
+  // Remove potentially harmful properties
+  const dangerous = ['__proto__', 'script', 'eval', 'constructor', 'prototype']
+  
+  function sanitizeObject(obj: any): any {
+    if (obj === null || typeof obj !== 'object') {
+      return obj
+    }
+    
+    if (Array.isArray(obj)) {
+      return obj.map(sanitizeObject)
+    }
+    
+    const sanitized: any = {}
+    Object.keys(obj).forEach(key => {
+      if (!dangerous.includes(key.toLowerCase())) {
+        sanitized[key] = sanitizeObject(obj[key])
+      }
+    })
+    
+    return sanitized
+  }
+  
+  return sanitizeObject(data) as DesignSystemConfig
+}
+
+export function extractComponentsFromResponse(response: any): GeneratedComponent[] {
+  if (!response.components || !Array.isArray(response.components)) {
+    return []
+  }
+  
+  return response.components.filter((comp: any) => comp.name && comp.type)
+}
+
+export function parseColorValue(color: string): string {
+  // Handle hex colors
+  if (color.match(/^#[0-9A-Fa-f]{6}$/)) {
+    return color
+  }
+  
+  // Handle RGB colors
+  const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
+  if (rgbMatch) {
+    const [, r, g, b] = rgbMatch
+    return `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`
+  }
+  
+  // Handle named colors
+  const namedColors: Record<string, string> = {
+    red: '#FF0000',
+    green: '#008000',
+    blue: '#0000FF',
+    black: '#000000',
+    white: '#FFFFFF'
+  }
+  
+  return namedColors[color.toLowerCase()] || '#000000'
+}
+
+export function generateTypographyScale(): Record<string, string> {
+  return {
+    xs: '0.75rem',
+    sm: '0.875rem',
+    base: '1rem',
+    lg: '1.125rem',
+    xl: '1.25rem',
+    '2xl': '1.5rem',
+    '3xl': '1.875rem',
+    '4xl': '2.25rem'
+  }
+}
+
+// Export the generateColorScale function that was already defined
+export { generateColorScale }

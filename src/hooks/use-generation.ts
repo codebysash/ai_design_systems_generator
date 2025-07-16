@@ -7,6 +7,7 @@ import {
   getGenerationResult,
 } from '@/lib/ai/request-handler'
 import { DesignSystemFormData } from '@/lib/validations'
+import { GenerationError, GenerationErrorHandler } from '@/lib/errors/generation-errors'
 
 interface UseGenerationReturn {
   // State
@@ -15,6 +16,7 @@ interface UseGenerationReturn {
   progress: GenerationProgress | null
   result: any | null
   error: string | null
+  generationError: GenerationError | null
 
   // Actions
   startGeneration: (formData: DesignSystemFormData) => Promise<void>
@@ -32,6 +34,7 @@ export function useGeneration(): UseGenerationReturn {
   const [progress, setProgress] = useState<GenerationProgress | null>(null)
   const [result, setResult] = useState<any | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [generationError, setGenerationError] = useState<GenerationError | null>(null)
   const [lastFormData, setLastFormData] = useState<DesignSystemFormData | null>(
     null
   )
@@ -43,6 +46,7 @@ export function useGeneration(): UseGenerationReturn {
         setError(null)
         setResult(null)
         setProgress(null)
+        setGenerationError(null)
 
         // Store form data for potential retry
         setLastFormData(requestFormData)
@@ -58,8 +62,12 @@ export function useGeneration(): UseGenerationReturn {
             if (request) {
               if (request.status === 'completed' && request.result) {
                 setResult(request.result)
+                setGenerationError(null)
               } else if (request.status === 'failed' && request.error) {
                 setError(request.error)
+                // Convert error string to GenerationError for better handling
+                const genError = GenerationErrorHandler.fromError(new Error(request.error))
+                setGenerationError(genError)
               }
             }
           }
@@ -67,9 +75,10 @@ export function useGeneration(): UseGenerationReturn {
 
         setRequestId(newRequestId)
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to start generation'
-        )
+        const errorMessage = err instanceof Error ? err.message : 'Failed to start generation'
+        setError(errorMessage)
+        const genError = GenerationErrorHandler.fromError(err as Error)
+        setGenerationError(genError)
       }
     },
     []
@@ -87,6 +96,7 @@ export function useGeneration(): UseGenerationReturn {
     setProgress(null)
     setResult(null)
     setError(null)
+    setGenerationError(null)
     setLastFormData(null)
   }, [])
 
@@ -103,6 +113,7 @@ export function useGeneration(): UseGenerationReturn {
     progress,
     result,
     error,
+    generationError,
 
     // Actions
     startGeneration,

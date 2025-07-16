@@ -1,6 +1,8 @@
 import { generateCompletion, DEFAULT_MODEL } from './openai'
 import { buildOptimizedPrompt, validatePromptInputs } from './prompt-builder'
 import { DesignSystemFormData } from '@/lib/validations'
+import { GenerationErrorHandler, retryHandler } from '@/lib/errors/generation-errors'
+import { getCachedDesignSystem, cacheDesignSystem } from '@/lib/cache/design-system-cache'
 
 export interface GenerationRequest {
   id: string
@@ -93,16 +95,38 @@ class AIRequestQueue {
     request.status = 'processing'
 
     try {
-      // Stage 1: Validation (already done, but update progress)
+      // Stage 1: Check cache first
+      this.updateProgress(requestId, {
+        stage: 'validating',
+        progress: 5,
+        message: 'Checking cache...',
+      })
+
+      const cachedResult = getCachedDesignSystem(request.formData)
+      if (cachedResult) {
+        this.updateProgress(requestId, {
+          stage: 'completed',
+          progress: 100,
+          message: 'Retrieved from cache!',
+          details: 'Found matching design system in cache'
+        })
+
+        request.result = cachedResult
+        request.status = 'completed'
+        request.completedAt = new Date()
+        return
+      }
+
+      // Stage 2: Validation (cache miss, proceed with generation)
       this.updateProgress(requestId, {
         stage: 'validating',
         progress: 10,
         message: 'Validating design requirements...',
       })
 
-      await this.delay(500) // Simulate validation time
+      await this.delay(300) // Reduced validation time
 
-      // Stage 2: Building optimized prompt
+      // Stage 3: Building optimized prompt
       this.updateProgress(requestId, {
         stage: 'building_prompt',
         progress: 25,
@@ -116,9 +140,9 @@ class AIRequestQueue {
         focus: 'balanced',
       })
 
-      await this.delay(300)
+      await this.delay(200)
 
-      // Stage 3: AI Generation
+      // Stage 4: AI Generation with retry logic
       this.updateProgress(requestId, {
         stage: 'generating',
         progress: 40,
@@ -126,13 +150,24 @@ class AIRequestQueue {
         details: `Estimated complexity: ${optimizedPrompt.complexity}`,
       })
 
-      const aiResponse = await generateCompletion(optimizedPrompt.prompt, {
-        model: DEFAULT_MODEL,
-        temperature: 0.7,
-        maxTokens: 3000,
-      })
+      const aiResponse = await retryHandler.executeWithRetry(
+        () => generateCompletion(optimizedPrompt.prompt, {
+          model: DEFAULT_MODEL,
+          temperature: 0.7,
+          maxTokens: 3000,
+        }),
+        `generation_${requestId}`,
+        (attempt, error) => {
+          this.updateProgress(requestId, {
+            stage: 'generating',
+            progress: 40 + (attempt * 10),
+            message: `Retrying generation (attempt ${attempt})...`,
+            details: error.message,
+          })
+        }
+      )
 
-      // Stage 4: Parsing and validation
+      // Stage 5: Parsing and validation
       this.updateProgress(requestId, {
         stage: 'parsing',
         progress: 80,
@@ -140,11 +175,33 @@ class AIRequestQueue {
         details: 'Validating generated design system',
       })
 
-      await this.delay(200)
+      await this.delay(150)
 
-      const parsedResult = await this.parseAIResponse(aiResponse.content)
+      const parsedResult = await retryHandler.executeWithRetry(
+        () => this.parseAIResponse(aiResponse.content),
+        `parsing_${requestId}`,
+        (attempt, error) => {
+          this.updateProgress(requestId, {
+            stage: 'parsing',
+            progress: 80 + (attempt * 5),
+            message: `Retrying parsing (attempt ${attempt})...`,
+            details: error.message,
+          })
+        }
+      )
 
-      // Stage 5: Completion
+      // Stage 6: Cache the result for future use
+      this.updateProgress(requestId, {
+        stage: 'completed',
+        progress: 95,
+        message: 'Caching result...',
+        details: 'Storing design system for faster future access'
+      })
+
+      // Cache the generated design system
+      cacheDesignSystem(request.formData, parsedResult, 30 * 60 * 1000) // Cache for 30 minutes
+
+      // Stage 7: Completion
       this.updateProgress(requestId, {
         stage: 'completed',
         progress: 100,
@@ -157,8 +214,10 @@ class AIRequestQueue {
       request.completedAt = new Date()
     } catch (error) {
       request.status = 'failed'
-      request.error =
-        error instanceof Error ? error.message : 'Unknown error occurred'
+      
+      // Use enhanced error handling
+      const generationError = GenerationErrorHandler.fromError(error as Error)
+      request.error = GenerationErrorHandler.formatUserMessage(generationError)
       request.completedAt = new Date()
 
       this.updateProgress(requestId, {

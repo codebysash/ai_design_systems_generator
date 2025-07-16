@@ -11,6 +11,19 @@ import {
   subscribeToProgress,
   getGenerationResult 
 } from '@/lib/ai/request-handler'
+import { 
+  GenerationError, 
+  GenerationErrorHandler, 
+  GenerationErrorType,
+  retryHandler 
+} from '@/lib/errors/generation-errors'
+import { 
+  ExclamationTriangleIcon, 
+  ArrowPathIcon, 
+  InformationCircleIcon,
+  CheckCircleIcon,
+  XCircleIcon
+} from '@radix-ui/react-icons'
 
 interface GenerationStatusProps {
   requestId: string
@@ -34,6 +47,7 @@ export function GenerationStatus({
   })
   const [request, setRequest] = useState<GenerationRequest | null>(null)
   const [isRetrying, setIsRetrying] = useState(false)
+  const [generationError, setGenerationError] = useState<GenerationError | null>(null)
 
   useEffect(() => {
     if (!requestId) return
@@ -54,8 +68,12 @@ export function GenerationStatus({
         setRequest(updatedRequest)
         
         if (updatedRequest.status === 'completed' && updatedRequest.result) {
+          setGenerationError(null)
           onComplete?.(updatedRequest.result)
         } else if (updatedRequest.status === 'failed' && updatedRequest.error) {
+          // Convert error string to GenerationError for better handling
+          const error = GenerationErrorHandler.fromError(new Error(updatedRequest.error))
+          setGenerationError(error)
           onError?.(updatedRequest.error)
         }
       }
@@ -68,10 +86,29 @@ export function GenerationStatus({
     if (!onRetry) return
     
     setIsRetrying(true)
+    setGenerationError(null)
     try {
       await onRetry()
+    } catch (error) {
+      const generationError = GenerationErrorHandler.fromError(error as Error)
+      setGenerationError(generationError)
     } finally {
       setIsRetrying(false)
+    }
+  }
+
+  const getErrorIcon = (errorType: GenerationErrorType) => {
+    switch (errorType) {
+      case GenerationErrorType.NETWORK_ERROR:
+        return <XCircleIcon className="h-5 w-5" />
+      case GenerationErrorType.RATE_LIMIT_ERROR:
+        return <ExclamationTriangleIcon className="h-5 w-5" />
+      case GenerationErrorType.VALIDATION_ERROR:
+        return <InformationCircleIcon className="h-5 w-5" />
+      case GenerationErrorType.TIMEOUT_ERROR:
+        return <ExclamationTriangleIcon className="h-5 w-5" />
+      default:
+        return <XCircleIcon className="h-5 w-5" />
     }
   }
 
@@ -85,7 +122,7 @@ export function GenerationStatus({
 
       {/* Error State */}
       <AnimatePresence>
-        {isFailed && (
+        {(isFailed || generationError) && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -93,22 +130,61 @@ export function GenerationStatus({
             className="rounded-lg border border-destructive bg-destructive/5 p-4"
           >
             <div className="flex items-start space-x-3">
-              <div className="text-destructive">⚠️</div>
+              <div className="text-destructive">
+                {generationError ? getErrorIcon(generationError.type) : <XCircleIcon className="h-5 w-5" />}
+              </div>
               <div className="flex-1">
-                <h4 className="font-medium text-destructive">Generation Failed</h4>
+                <h4 className="font-medium text-destructive">
+                  {generationError?.type === GenerationErrorType.NETWORK_ERROR ? 'Network Error' :
+                   generationError?.type === GenerationErrorType.RATE_LIMIT_ERROR ? 'Rate Limit Exceeded' :
+                   generationError?.type === GenerationErrorType.VALIDATION_ERROR ? 'Validation Error' :
+                   generationError?.type === GenerationErrorType.TIMEOUT_ERROR ? 'Request Timeout' :
+                   'Generation Failed'}
+                </h4>
                 <p className="mt-1 text-sm text-destructive/80">
-                  {request?.error || 'An unexpected error occurred'}
+                  {generationError ? 
+                    GenerationErrorHandler.formatUserMessage(generationError) : 
+                    (request?.error || 'An unexpected error occurred')
+                  }
                 </p>
-                {onRetry && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-3"
-                    onClick={handleRetry}
-                    disabled={isRetrying}
-                  >
-                    {isRetrying ? 'Retrying...' : 'Try Again'}
-                  </Button>
+                {generationError?.details && (
+                  <details className="mt-2">
+                    <summary className="text-xs text-destructive/60 cursor-pointer hover:text-destructive/80">
+                      Technical Details
+                    </summary>
+                    <pre className="mt-1 text-xs text-destructive/60 overflow-auto">
+                      {generationError.details}
+                    </pre>
+                  </details>
+                )}
+                {onRetry && (generationError?.retryable !== false) && (
+                  <div className="mt-3 flex items-center space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleRetry}
+                      disabled={isRetrying}
+                      className="flex items-center space-x-1"
+                    >
+                      <ArrowPathIcon className="h-4 w-4" />
+                      <span>{isRetrying ? 'Retrying...' : 'Try Again'}</span>
+                    </Button>
+                    {generationError?.suggestedAction && (
+                      <span className="text-xs text-muted-foreground">
+                        {generationError.suggestedAction}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {generationError?.retryable === false && (
+                  <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                    <div className="flex items-center space-x-2">
+                      <InformationCircleIcon className="h-4 w-4 text-yellow-600" />
+                      <span className="text-yellow-800">
+                        This error cannot be resolved by retrying. {generationError.suggestedAction}
+                      </span>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -126,7 +202,9 @@ export function GenerationStatus({
             className="rounded-lg border border-green-200 bg-green-50 p-4"
           >
             <div className="flex items-start space-x-3">
-              <div className="text-green-600">🎉</div>
+              <div className="text-green-600">
+                <CheckCircleIcon className="h-5 w-5" />
+              </div>
               <div className="flex-1">
                 <h4 className="font-medium text-green-800">Design System Generated!</h4>
                 <p className="mt-1 text-sm text-green-700">
