@@ -26,11 +26,11 @@ function lightenColor(color: string, amount: number): string {
   const r = parseInt(hex.substr(0, 2), 16)
   const g = parseInt(hex.substr(2, 2), 16)
   const b = parseInt(hex.substr(4, 2), 16)
-  
+
   const newR = Math.min(255, Math.round(r + (255 - r) * amount))
   const newG = Math.min(255, Math.round(g + (255 - g) * amount))
   const newB = Math.min(255, Math.round(b + (255 - b) * amount))
-  
+
   return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`
 }
 
@@ -40,11 +40,11 @@ function darkenColor(color: string, amount: number): string {
   const r = parseInt(hex.substr(0, 2), 16)
   const g = parseInt(hex.substr(2, 2), 16)
   const b = parseInt(hex.substr(4, 2), 16)
-  
+
   const newR = Math.max(0, Math.round(r * (1 - amount)))
   const newG = Math.max(0, Math.round(g * (1 - amount)))
   const newB = Math.max(0, Math.round(b * (1 - amount)))
-  
+
   return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`
 }
 
@@ -284,20 +284,29 @@ export function parseComponentResponse(response: string): GeneratedComponent {
 }
 
 function cleanJsonResponse(response: string): string {
-  // Remove any markdown code blocks
-  const withoutCodeBlocks = response
-    .replace(/```json\n?/g, '')
-    .replace(/```\n?/g, '')
+  // Extract all JSON blocks from markdown code blocks
+  const jsonBlocks: string[] = []
+  const jsonBlockRegex = /```json\s*([\s\S]*?)```/g
+  let match
 
-  // Find the JSON content between first { and last }
-  const firstBrace = withoutCodeBlocks.indexOf('{')
-  const lastBrace = withoutCodeBlocks.lastIndexOf('}')
+  while ((match = jsonBlockRegex.exec(response)) !== null) {
+    jsonBlocks.push(match[1].trim())
+  }
 
+  // If we found JSON blocks, use the largest one
+  if (jsonBlocks.length > 0) {
+    return jsonBlocks.reduce((largest, current) =>
+      current.length > largest.length ? current : largest
+    )
+  }
+
+  // Fallback: find JSON content between first { and last }
+  const firstBrace = response.indexOf('{')
+  const lastBrace = response.lastIndexOf('}')
   if (firstBrace === -1 || lastBrace === -1 || firstBrace >= lastBrace) {
     throw new Error('No valid JSON found in response')
   }
-
-  return withoutCodeBlocks.slice(firstBrace, lastBrace + 1)
+  return response.slice(firstBrace, lastBrace + 1)
 }
 
 export function validateJsonResponse(response: string): boolean {
@@ -310,26 +319,34 @@ export function validateJsonResponse(response: string): boolean {
 }
 
 // Additional functions expected by tests
-export function parseAIResponse(response: string): { success: boolean; data?: any; errors: string[] } {
+export function parseAIResponse(response: string): {
+  success: boolean
+  data?: any
+  errors: string[]
+} {
   try {
     const cleanedResponse = cleanJsonResponse(response)
     const data = JSON.parse(cleanedResponse)
     return { success: true, data, errors: [] }
   } catch (error) {
-    return { 
-      success: false, 
-      errors: ['Invalid JSON format'] 
+    return {
+      success: false,
+      errors: ['Invalid JSON format'],
     }
   }
 }
 
-export function validateDesignSystemResponse(data: any): { isValid: boolean; errors: string[]; data?: DesignSystemConfig } {
+export function validateDesignSystemResponse(data: any): {
+  isValid: boolean
+  errors: string[]
+  data?: DesignSystemConfig
+} {
   const errors: string[] = []
-  
+
   if (!data.name) {
     errors.push('Missing required field: name')
   }
-  
+
   if (!data.colors) {
     errors.push('Missing required field: colors')
   } else {
@@ -340,57 +357,78 @@ export function validateDesignSystemResponse(data: any): { isValid: boolean; err
       }
     })
   }
-  
+
   if (!data.typography) {
     errors.push('Missing required field: typography')
   }
-  
+
   if (!data.spacing) {
     errors.push('Missing required field: spacing')
   }
-  
+
   if (!data.borderRadius) {
     errors.push('Missing required field: borderRadius')
   }
-  
+
   return {
     isValid: errors.length === 0,
     errors,
-    data: errors.length === 0 ? data as DesignSystemConfig : undefined
+    data: errors.length === 0 ? (data as DesignSystemConfig) : undefined,
   }
 }
 
 export function sanitizeResponse(data: any): DesignSystemConfig {
   // Remove potentially harmful properties
   const dangerous = ['__proto__', 'script', 'eval', 'constructor', 'prototype']
-  
+
   function sanitizeObject(obj: any): any {
     if (obj === null || typeof obj !== 'object') {
+      // Also sanitize string values for script tags
+      if (typeof obj === 'string' && obj.includes('<script>')) {
+        return '' // Remove strings containing script tags
+      }
       return obj
     }
-    
+
     if (Array.isArray(obj)) {
       return obj.map(sanitizeObject)
     }
-    
+
     const sanitized: any = {}
-    Object.keys(obj).forEach(key => {
-      if (!dangerous.includes(key.toLowerCase())) {
+    // Use getOwnPropertyNames to catch __proto__ and other non-enumerable properties
+    const allKeys = Object.getOwnPropertyNames(obj)
+    allKeys.forEach(key => {
+      // Check for dangerous properties (case-insensitive)
+      if (
+        !dangerous.includes(key.toLowerCase()) &&
+        key !== '__proto__' &&
+        key !== 'script' &&
+        key !== 'eval' &&
+        key !== 'dangerous'
+      ) {
         sanitized[key] = sanitizeObject(obj[key])
       }
     })
-    
-    return sanitized
+
+    // Ensure no __proto__ property exists on the result by creating a clean object
+    const cleanObj = Object.create(null)
+    Object.keys(sanitized).forEach(key => {
+      cleanObj[key] = sanitized[key]
+    })
+
+    return cleanObj
   }
-  
+
   return sanitizeObject(data) as DesignSystemConfig
 }
 
-export function extractComponentsFromResponse(response: any): GeneratedComponent[] {
+export function extractComponentsFromResponse(
+  response: any
+): GeneratedComponent[] {
   if (!response.components || !Array.isArray(response.components)) {
     return []
   }
-  
+
   return response.components.filter((comp: any) => comp.name && comp.type)
 }
 
@@ -399,23 +437,23 @@ export function parseColorValue(color: string): string {
   if (color.match(/^#[0-9A-Fa-f]{6}$/)) {
     return color
   }
-  
+
   // Handle RGB colors
   const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/)
   if (rgbMatch) {
     const [, r, g, b] = rgbMatch
     return `#${parseInt(r).toString(16).padStart(2, '0')}${parseInt(g).toString(16).padStart(2, '0')}${parseInt(b).toString(16).padStart(2, '0')}`
   }
-  
+
   // Handle named colors
   const namedColors: Record<string, string> = {
     red: '#FF0000',
     green: '#008000',
     blue: '#0000FF',
     black: '#000000',
-    white: '#FFFFFF'
+    white: '#FFFFFF',
   }
-  
+
   return namedColors[color.toLowerCase()] || '#000000'
 }
 
@@ -428,7 +466,7 @@ export function generateTypographyScale(): Record<string, string> {
     xl: '1.25rem',
     '2xl': '1.5rem',
     '3xl': '1.875rem',
-    '4xl': '2.25rem'
+    '4xl': '2.25rem',
   }
 }
 

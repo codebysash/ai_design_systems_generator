@@ -1,6 +1,14 @@
 'use client'
 
-import React, { useState, useEffect, useMemo, memo, useCallback, lazy, Suspense } from 'react'
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  memo,
+  useCallback,
+  lazy,
+  Suspense,
+} from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GeneratedComponent, DesignSystemConfig } from '@/types'
 import { PreviewControls } from './preview-controls'
@@ -11,23 +19,29 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
-import { 
-  useVirtualizedComponents, 
-  useThrottledCallback, 
+import {
+  useVirtualizedComponents,
+  useThrottledCallback,
   useDebounced,
-  PreviewErrorBoundary
+  PreviewErrorBoundary,
 } from './performance-utils'
 
 // Lazy load ComponentPreview for better initial load performance
-const LazyComponentPreview = lazy(() => 
+const LazyComponentPreview = lazy(() =>
   import('./component-preview').then(module => ({
-    default: module.ComponentPreview
+    default: module.ComponentPreview,
   }))
 )
 
@@ -50,20 +64,27 @@ const ComponentPlaygroundImpl: React.FC<ComponentPlaygroundProps> = ({
   showCodePanel = true,
   showResponsiveMode = true,
   showThemeControls = true,
-  allowMultipleComponents = false
+  allowMultipleComponents = false,
 }) => {
-  const [selectedComponent, setSelectedComponent] = useState<GeneratedComponent>(
-    () => components.find(c => c.name === defaultComponent) || components[0]
+  const [selectedComponent, setSelectedComponent] =
+    useState<GeneratedComponent>(
+      () => components.find(c => c.name === defaultComponent) || components[0]
+    )
+  const [variant, setVariant] = useState<string>(
+    selectedComponent?.variants[0]?.name || 'default'
   )
-  const [variant, setVariant] = useState<string>(selectedComponent?.variants[0]?.name || 'default')
   const [size, setSize] = useState<string>(selectedComponent?.sizes[0] || 'md')
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [state, setState] = useState<Record<string, any>>({})
   const [props, setProps] = useState<Record<string, any>>({})
   const [activeTab, setActiveTab] = useState('preview')
   const [isResponsiveMode, setIsResponsiveMode] = useState(false)
-  const [multipleComponents, setMultipleComponents] = useState<GeneratedComponent[]>([])
-  const [playgroundLayout, setPlaygroundLayout] = useState<'horizontal' | 'vertical'>('horizontal')
+  const [multipleComponents, setMultipleComponents] = useState<
+    GeneratedComponent[]
+  >([])
+  const [playgroundLayout, setPlaygroundLayout] = useState<
+    'horizontal' | 'vertical'
+  >('horizontal')
 
   // Debounce frequently changing values
   const debouncedVariant = useDebounced(variant, 150)
@@ -79,12 +100,15 @@ const ComponentPlaygroundImpl: React.FC<ComponentPlaygroundProps> = ({
   }, [selectedComponent])
 
   // Throttled handlers for better performance
-  const handleComponentChange = useThrottledCallback((componentName: string) => {
-    const component = components.find(c => c.name === componentName)
-    if (component) {
-      setSelectedComponent(component)
-    }
-  }, 100)
+  const handleComponentChange = useThrottledCallback(
+    (componentName: string) => {
+      const component = components.find(c => c.name === componentName)
+      if (component) {
+        setSelectedComponent(component)
+      }
+    },
+    100
+  )
 
   const handleReset = useCallback(() => {
     setVariant(selectedComponent?.variants[0]?.name || 'default')
@@ -93,12 +117,18 @@ const ComponentPlaygroundImpl: React.FC<ComponentPlaygroundProps> = ({
     setProps({})
   }, [selectedComponent])
 
-  const handleAddComponent = useCallback((componentName: string) => {
-    const component = components.find(c => c.name === componentName)
-    if (component && !multipleComponents.find(c => c.name === componentName)) {
-      setMultipleComponents(prev => [...prev, component])
-    }
-  }, [components, multipleComponents])
+  const handleAddComponent = useCallback(
+    (componentName: string) => {
+      const component = components.find(c => c.name === componentName)
+      if (
+        component &&
+        !multipleComponents.find(c => c.name === componentName)
+      ) {
+        setMultipleComponents(prev => [...prev, component])
+      }
+    },
+    [components, multipleComponents]
+  )
 
   const handleRemoveComponent = useCallback((componentName: string) => {
     setMultipleComponents(prev => prev.filter(c => c.name !== componentName))
@@ -109,7 +139,7 @@ const ComponentPlaygroundImpl: React.FC<ComponentPlaygroundProps> = ({
     if (allowMultipleComponents && multipleComponents.length > 0) {
       return (
         <div className="space-y-4">
-          {multipleComponents.map((component) => (
+          {multipleComponents.map(component => (
             <div key={component.name} className="relative">
               <div className="absolute top-2 right-2 z-10">
                 <Button
@@ -158,7 +188,18 @@ const ComponentPlaygroundImpl: React.FC<ComponentPlaygroundProps> = ({
         </Suspense>
       </PreviewErrorBoundary>
     )
-  }, [selectedComponent, designSystem, theme, debouncedVariant, debouncedSize, debouncedState, props, allowMultipleComponents, multipleComponents, handleRemoveComponent])
+  }, [
+    selectedComponent,
+    designSystem,
+    theme,
+    debouncedVariant,
+    debouncedSize,
+    debouncedState,
+    props,
+    allowMultipleComponents,
+    multipleComponents,
+    handleRemoveComponent,
+  ])
 
   // Loading skeleton component for better UX
   const PreviewLoadingSkeleton = () => (
@@ -187,13 +228,19 @@ const ComponentPlaygroundImpl: React.FC<ComponentPlaygroundProps> = ({
 
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden">
-          <div className={cn(
-            'flex-1 flex',
-            playgroundLayout === 'horizontal' ? 'flex-row' : 'flex-col'
-          )}>
+          <div
+            className={cn(
+              'flex-1 flex',
+              playgroundLayout === 'horizontal' ? 'flex-row' : 'flex-col'
+            )}
+          >
             {/* Preview Area */}
             <div className="flex-1 flex flex-col">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="flex-1 flex flex-col"
+              >
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="preview">Preview</TabsTrigger>
                   <TabsTrigger value="code">Code</TabsTrigger>
@@ -240,10 +287,12 @@ const ComponentPlaygroundImpl: React.FC<ComponentPlaygroundProps> = ({
             </div>
 
             {/* Controls Panel */}
-            <div className={cn(
-              'bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700',
-              playgroundLayout === 'horizontal' ? 'w-80' : 'h-80'
-            )}>
+            <div
+              className={cn(
+                'bg-gray-50 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700',
+                playgroundLayout === 'horizontal' ? 'w-80' : 'h-80'
+              )}
+            >
               <div className="h-full p-4 overflow-auto">
                 <ControlsPanel
                   selectedComponent={selectedComponent}
@@ -293,16 +342,14 @@ const PlaygroundHeader: React.FC<PlaygroundHeaderProps> = ({
   onResponsiveModeToggle,
   showResponsiveMode,
   layout,
-  onLayoutChange
+  onLayoutChange,
 }) => {
   return (
     <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <h1 className="text-xl font-semibold">Component Playground</h1>
-          <Badge variant="outline">
-            {components.length} components
-          </Badge>
+          <Badge variant="outline">{components.length} components</Badge>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -375,7 +422,7 @@ const ControlsPanel: React.FC<ControlsPanelProps> = ({
   onPropsChange,
   onReset,
   onAddComponent,
-  onRemoveComponent
+  onRemoveComponent,
 }) => {
   return (
     <div className="space-y-4">
@@ -385,17 +432,20 @@ const ControlsPanel: React.FC<ControlsPanelProps> = ({
           <CardTitle className="text-sm">Component</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Select value={selectedComponent.name} onValueChange={(name) => {
-            const component = components.find(c => c.name === name)
-            if (component) {
-              // This would trigger the parent component change
-            }
-          }}>
+          <Select
+            value={selectedComponent.name}
+            onValueChange={name => {
+              const component = components.find(c => c.name === name)
+              if (component) {
+                // This would trigger the parent component change
+              }
+            }}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {components.map((component) => (
+              {components.map(component => (
                 <SelectItem key={component.name} value={component.name}>
                   {component.name}
                 </SelectItem>
@@ -412,8 +462,10 @@ const ControlsPanel: React.FC<ControlsPanelProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   {components
-                    .filter(c => !multipleComponents.find(mc => mc.name === c.name))
-                    .map((component) => (
+                    .filter(
+                      c => !multipleComponents.find(mc => mc.name === c.name)
+                    )
+                    .map(component => (
                       <SelectItem key={component.name} value={component.name}>
                         {component.name}
                       </SelectItem>
@@ -443,11 +495,7 @@ const ControlsPanel: React.FC<ControlsPanelProps> = ({
 
       {/* Theme Controls */}
       {showThemeControls && (
-        <ThemeSwitcher
-          showVariants={true}
-          showPresets={true}
-          compact={false}
-        />
+        <ThemeSwitcher showVariants={true} showPresets={true} compact={false} />
       )}
     </div>
   )
@@ -468,7 +516,7 @@ const CodePanel: React.FC<CodePanelProps> = ({
   variant,
   size,
   state,
-  props
+  props,
 }) => {
   const [codeType, setCodeType] = useState<'tsx' | 'css' | 'tokens'>('tsx')
   const [generatedCode, setGeneratedCode] = useState('')
@@ -500,7 +548,12 @@ const CodePanel: React.FC<CodePanelProps> = ({
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-2">
           <Label>Code Type:</Label>
-          <Select value={codeType} onValueChange={setCodeType}>
+          <Select
+            value={codeType}
+            onValueChange={(value: 'css' | 'tsx' | 'tokens') =>
+              setCodeType(value)
+            }
+          >
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -532,7 +585,7 @@ interface DocumentationPanelProps {
 
 const DocumentationPanel: React.FC<DocumentationPanelProps> = ({
   component,
-  designSystem
+  designSystem,
 }) => {
   return (
     <div className="h-full overflow-auto p-4">
@@ -547,16 +600,26 @@ const DocumentationPanel: React.FC<DocumentationPanelProps> = ({
               <th className="border border-gray-300 p-2 text-left">Name</th>
               <th className="border border-gray-300 p-2 text-left">Type</th>
               <th className="border border-gray-300 p-2 text-left">Required</th>
-              <th className="border border-gray-300 p-2 text-left">Description</th>
+              <th className="border border-gray-300 p-2 text-left">
+                Description
+              </th>
             </tr>
           </thead>
           <tbody>
-            {component.props.map((prop) => (
+            {component.props.map(prop => (
               <tr key={prop.name}>
-                <td className="border border-gray-300 p-2 font-mono">{prop.name}</td>
-                <td className="border border-gray-300 p-2 font-mono">{prop.type}</td>
-                <td className="border border-gray-300 p-2">{prop.required ? 'Yes' : 'No'}</td>
-                <td className="border border-gray-300 p-2">{prop.description}</td>
+                <td className="border border-gray-300 p-2 font-mono">
+                  {prop.name}
+                </td>
+                <td className="border border-gray-300 p-2 font-mono">
+                  {prop.type}
+                </td>
+                <td className="border border-gray-300 p-2">
+                  {prop.required ? 'Yes' : 'No'}
+                </td>
+                <td className="border border-gray-300 p-2">
+                  {prop.description}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -564,7 +627,7 @@ const DocumentationPanel: React.FC<DocumentationPanelProps> = ({
 
         <h3>Variants</h3>
         <ul>
-          {component.variants.map((variant) => (
+          {component.variants.map(variant => (
             <li key={variant.name}>
               <strong>{variant.name}</strong>: {variant.description}
             </li>
@@ -608,7 +671,10 @@ const generateTSXCode = (
 </${component.name}>`
 }
 
-const generateCSSCode = (component: GeneratedComponent, designSystem: DesignSystemConfig): string => {
+const generateCSSCode = (
+  component: GeneratedComponent,
+  designSystem: DesignSystemConfig
+): string => {
   return `/* ${component.name} Component Styles */
 .${component.name.toLowerCase()} {
   /* Base styles */
@@ -618,38 +684,57 @@ const generateCSSCode = (component: GeneratedComponent, designSystem: DesignSyst
 }
 
 /* Variants */
-${component.variants.map(variant => `
+${component.variants
+  .map(
+    variant => `
 .${component.name.toLowerCase()}--${variant.name} {
   /* ${variant.description} */
 }
-`).join('')}
+`
+  )
+  .join('')}
 
 /* Sizes */
-${component.sizes.map(size => `
+${component.sizes
+  .map(
+    size => `
 .${component.name.toLowerCase()}--${size} {
   /* ${size} size styles */
 }
-`).join('')}`
+`
+  )
+  .join('')}`
 }
 
 const generateTokensCode = (designSystem: DesignSystemConfig): string => {
-  return JSON.stringify({
-    colors: designSystem.colors,
-    typography: designSystem.typography,
-    spacing: designSystem.spacing,
-    borderRadius: designSystem.borderRadius
-  }, null, 2)
+  return JSON.stringify(
+    {
+      colors: designSystem.colors,
+      typography: designSystem.typography,
+      spacing: designSystem.spacing,
+      borderRadius: designSystem.borderRadius,
+    },
+    null,
+    2
+  )
 }
 
 // Memoized ComponentPlayground for better performance
-export const ComponentPlayground = memo(ComponentPlaygroundImpl, (prevProps, nextProps) => {
-  return (
-    prevProps.components.length === nextProps.components.length &&
-    prevProps.components.every((comp, index) => comp.name === nextProps.components[index]?.name) &&
-    JSON.stringify(prevProps.designSystem.colors) === JSON.stringify(nextProps.designSystem.colors) &&
-    JSON.stringify(prevProps.designSystem.typography) === JSON.stringify(nextProps.designSystem.typography) &&
-    prevProps.defaultComponent === nextProps.defaultComponent
-  )
-})
+export const ComponentPlayground = memo(
+  ComponentPlaygroundImpl,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.components.length === nextProps.components.length &&
+      prevProps.components.every(
+        (comp, index) => comp.name === nextProps.components[index]?.name
+      ) &&
+      JSON.stringify(prevProps.designSystem.colors) ===
+        JSON.stringify(nextProps.designSystem.colors) &&
+      JSON.stringify(prevProps.designSystem.typography) ===
+        JSON.stringify(nextProps.designSystem.typography) &&
+      prevProps.defaultComponent === nextProps.defaultComponent
+    )
+  }
+)
 
 export default ComponentPlayground

@@ -7,12 +7,12 @@ import { componentCodeGenerator } from '@/lib/design-system/code-generator'
 import { variantSystemGenerator } from '@/lib/design-system/variants'
 import { themeGenerator } from '@/lib/design-system/themes'
 import { cn } from '@/lib/utils'
-import { 
-  useComputedStyles, 
-  useDebounced, 
+import {
+  useComputedStyles,
+  useDebounced,
   usePerformanceMonitor,
   componentPropsEqual,
-  PreviewErrorBoundary
+  PreviewErrorBoundary,
 } from './performance-utils'
 
 export interface ComponentPreviewProps {
@@ -46,11 +46,11 @@ const ComponentPreviewImpl: React.FC<ComponentPreviewProps> = ({
   onPropsChange,
   onVariantChange,
   onSizeChange,
-  onStateChange
+  onStateChange,
 }) => {
   // Performance monitoring
   usePerformanceMonitor(`ComponentPreview-${component.name}`)
-  
+
   const [isRendering, setIsRendering] = useState(false)
   const [renderError, setRenderError] = useState<string | null>(null)
   const [componentCode, setComponentCode] = useState<string>('')
@@ -61,7 +61,12 @@ const ComponentPreviewImpl: React.FC<ComponentPreviewProps> = ({
   const debouncedState = useDebounced(state, 150)
 
   // Memoized computed styles
-  const computedStyles = useComputedStyles(component, debouncedVariant, debouncedSize, designSystem)
+  const computedStyles = useComputedStyles(
+    component,
+    debouncedVariant,
+    debouncedSize,
+    designSystem
+  )
 
   // Generate variant system for the component (memoized)
   const variantSystem = useMemo(() => {
@@ -71,7 +76,12 @@ const ComponentPreviewImpl: React.FC<ComponentPreviewProps> = ({
   // Generate theme for the component (memoized)
   const componentTheme = useMemo(() => {
     return themeGenerator.generateTheme(designSystem, theme)
-  }, [designSystem.colors, designSystem.typography, designSystem.spacing, theme])
+  }, [
+    designSystem.colors,
+    designSystem.typography,
+    designSystem.spacing,
+    theme,
+  ])
 
   // Memoized code generation callback
   const generateCodeMemoized = useCallback(async () => {
@@ -90,13 +100,15 @@ const ComponentPreviewImpl: React.FC<ComponentPreviewProps> = ({
           includeStories: false,
           includeDocumentation: false,
           accessibility: true,
-          variant: 'compound'
+          variant: 'compound',
         }
       )
 
       setComponentCode(generatedCode.component)
     } catch (error) {
-      setRenderError(error instanceof Error ? error.message : 'Failed to generate component')
+      setRenderError(
+        error instanceof Error ? error.message : 'Failed to generate component'
+      )
     } finally {
       setIsRendering(false)
     }
@@ -128,17 +140,30 @@ const ComponentPreviewImpl: React.FC<ComponentPreviewProps> = ({
     }
 
     // Render component based on type with memoization
-    return <MemoizedDynamicComponentRenderer
-      component={component}
-      variant={debouncedVariant}
-      size={debouncedSize}
-      state={debouncedState}
-      props={props}
-      theme={componentTheme}
-      className={className}
-      computedStyles={computedStyles}
-    />
-  }, [renderError, isRendering, component, debouncedVariant, debouncedSize, debouncedState, props, componentTheme, className, computedStyles])
+    return (
+      <MemoizedDynamicComponentRenderer
+        component={component}
+        variant={debouncedVariant}
+        size={debouncedSize}
+        state={debouncedState}
+        props={props}
+        theme={componentTheme}
+        className={className}
+        computedStyles={computedStyles}
+      />
+    )
+  }, [
+    renderError,
+    isRendering,
+    component,
+    debouncedVariant,
+    debouncedSize,
+    debouncedState,
+    props,
+    componentTheme,
+    className,
+    computedStyles,
+  ])
 
   return (
     <PreviewErrorBoundary>
@@ -174,8 +199,13 @@ const OptimizedThemeVariables = memo<{ theme: any }>(({ theme }) => (
   `}</style>
 ))
 
+OptimizedThemeVariables.displayName = 'OptimizedThemeVariables'
+
 // Export memoized component with custom comparison
-export const ComponentPreview = memo(ComponentPreviewImpl, componentPropsEqual)
+const ComponentPreviewMemoized = memo(ComponentPreviewImpl, componentPropsEqual)
+ComponentPreviewMemoized.displayName = 'ComponentPreview'
+
+export const ComponentPreview = ComponentPreviewMemoized
 
 interface DynamicComponentRendererProps {
   component: GeneratedComponent
@@ -196,16 +226,19 @@ const DynamicComponentRendererImpl: React.FC<DynamicComponentRendererProps> = ({
   props,
   theme,
   className,
-  computedStyles
+  computedStyles,
 }) => {
-  const baseProps = useMemo(() => ({
-    variant,
-    size,
-    ...state,
-    ...props,
-    className: cn(className),
-    style: computedStyles?.combined
-  }), [variant, size, state, props, className, computedStyles])
+  const baseProps = useMemo(
+    () => ({
+      variant,
+      size,
+      ...state,
+      ...props,
+      className: cn(className),
+      style: computedStyles?.combined,
+    }),
+    [variant, size, state, props, className, computedStyles]
+  )
 
   const ComponentToRender = useMemo(() => {
     switch (component.name) {
@@ -234,7 +267,12 @@ const DynamicComponentRendererImpl: React.FC<DynamicComponentRendererProps> = ({
       case 'Progress':
         return <MemoizedProgressPreview {...baseProps} />
       default:
-        return <MemoizedDefaultComponentPreview {...baseProps} componentName={component.name} />
+        return (
+          <MemoizedDefaultComponentPreview
+            {...baseProps}
+            componentName={component.name}
+          />
+        )
     }
   }, [component.name, baseProps])
 
@@ -242,27 +280,38 @@ const DynamicComponentRendererImpl: React.FC<DynamicComponentRendererProps> = ({
 }
 
 // Memoized version with optimized comparison
-const MemoizedDynamicComponentRenderer = memo(DynamicComponentRendererImpl, (prevProps, nextProps) => {
-  return (
-    prevProps.component.name === nextProps.component.name &&
-    prevProps.variant === nextProps.variant &&
-    prevProps.size === nextProps.size &&
-    JSON.stringify(prevProps.state) === JSON.stringify(nextProps.state) &&
-    JSON.stringify(prevProps.props) === JSON.stringify(nextProps.props) &&
-    prevProps.className === nextProps.className
-  )
-})
+const MemoizedDynamicComponentRenderer = memo(
+  DynamicComponentRendererImpl,
+  (prevProps, nextProps) => {
+    return (
+      prevProps.component.name === nextProps.component.name &&
+      prevProps.variant === nextProps.variant &&
+      prevProps.size === nextProps.size &&
+      JSON.stringify(prevProps.state) === JSON.stringify(nextProps.state) &&
+      JSON.stringify(prevProps.props) === JSON.stringify(nextProps.props) &&
+      prevProps.className === nextProps.className
+    )
+  }
+)
 
 // Component preview implementations
-const ButtonPreview: React.FC<any> = ({ variant, size, loading, disabled, className, ...props }) => {
-  const baseStyles = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none'
-  
+const ButtonPreview: React.FC<any> = ({
+  variant,
+  size,
+  loading,
+  disabled,
+  className,
+  ...props
+}) => {
+  const baseStyles =
+    'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none'
+
   const variantStyles = {
     primary: 'bg-primary-500 text-white hover:bg-primary-600',
     secondary: 'bg-secondary-500 text-white hover:bg-secondary-600',
     outline: 'border border-primary-500 text-primary-500 hover:bg-primary-50',
     ghost: 'text-primary-500 hover:bg-primary-50',
-    danger: 'bg-red-500 text-white hover:bg-red-600'
+    danger: 'bg-red-500 text-white hover:bg-red-600',
   }
 
   const sizeStyles = {
@@ -270,14 +319,15 @@ const ButtonPreview: React.FC<any> = ({ variant, size, loading, disabled, classN
     sm: 'h-8 px-3 text-sm',
     md: 'h-9 px-4 text-sm',
     lg: 'h-10 px-6 text-base',
-    xl: 'h-11 px-8 text-base'
+    xl: 'h-11 px-8 text-base',
   }
 
   return (
     <button
       className={cn(
         baseStyles,
-        variantStyles[variant as keyof typeof variantStyles] || variantStyles.primary,
+        variantStyles[variant as keyof typeof variantStyles] ||
+          variantStyles.primary,
         sizeStyles[size as keyof typeof sizeStyles] || sizeStyles.md,
         className
       )}
@@ -285,9 +335,25 @@ const ButtonPreview: React.FC<any> = ({ variant, size, loading, disabled, classN
       {...props}
     >
       {loading && (
-        <svg className="mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        <svg
+          className="mr-2 h-4 w-4 animate-spin"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          ></circle>
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
         </svg>
       )}
       {loading ? 'Loading...' : 'Button'}
@@ -295,28 +361,38 @@ const ButtonPreview: React.FC<any> = ({ variant, size, loading, disabled, classN
   )
 }
 
-const InputPreview: React.FC<any> = ({ variant, size, error, disabled, className, ...props }) => {
-  const baseStyles = 'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
-  
+const InputPreview: React.FC<any> = ({
+  variant,
+  size,
+  error,
+  disabled,
+  className,
+  ...props
+}) => {
+  const baseStyles =
+    'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+
   const variantStyles = {
     default: 'border-gray-300',
     filled: 'border-0 bg-gray-100',
-    outlined: 'border-2 border-gray-300'
+    outlined: 'border-2 border-gray-300',
   }
 
   const sizeStyles = {
     sm: 'h-8 text-sm',
     md: 'h-9 text-sm',
-    lg: 'h-10 text-base'
+    lg: 'h-10 text-base',
   }
 
   return (
     <input
       className={cn(
         baseStyles,
-        variantStyles[variant as keyof typeof variantStyles] || variantStyles.default,
+        variantStyles[variant as keyof typeof variantStyles] ||
+          variantStyles.default,
         sizeStyles[size as keyof typeof sizeStyles] || sizeStyles.md,
-        error && 'border-red-500 text-red-900 focus:border-red-500 focus:ring-red-500',
+        error &&
+          'border-red-500 text-red-900 focus:border-red-500 focus:ring-red-500',
         className
       )}
       placeholder="Enter text..."
@@ -328,18 +404,19 @@ const InputPreview: React.FC<any> = ({ variant, size, error, disabled, className
 
 const CardPreview: React.FC<any> = ({ variant, className, ...props }) => {
   const baseStyles = 'rounded-lg'
-  
+
   const variantStyles = {
     default: 'bg-white border border-gray-200',
     outlined: 'bg-white border-2 border-gray-200',
-    elevated: 'bg-white shadow-md border border-gray-100'
+    elevated: 'bg-white shadow-md border border-gray-100',
   }
 
   return (
     <div
       className={cn(
         baseStyles,
-        variantStyles[variant as keyof typeof variantStyles] || variantStyles.default,
+        variantStyles[variant as keyof typeof variantStyles] ||
+          variantStyles.default,
         className
       )}
       {...props}
@@ -347,20 +424,28 @@ const CardPreview: React.FC<any> = ({ variant, className, ...props }) => {
       <div className="p-6">
         <h3 className="text-lg font-semibold mb-2">Card Title</h3>
         <p className="text-gray-600">
-          This is a sample card component with some content to demonstrate the design.
+          This is a sample card component with some content to demonstrate the
+          design.
         </p>
       </div>
     </div>
   )
 }
 
-const SelectPreview: React.FC<any> = ({ variant, size, disabled, className, ...props }) => {
-  const baseStyles = 'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
-  
+const SelectPreview: React.FC<any> = ({
+  variant,
+  size,
+  disabled,
+  className,
+  ...props
+}) => {
+  const baseStyles =
+    'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+
   const sizeStyles = {
     sm: 'h-8 text-sm',
     md: 'h-9 text-sm',
-    lg: 'h-10 text-base'
+    lg: 'h-10 text-base',
   }
 
   return (
@@ -381,14 +466,23 @@ const SelectPreview: React.FC<any> = ({ variant, size, disabled, className, ...p
   )
 }
 
-const TextareaPreview: React.FC<any> = ({ variant, size, error, disabled, className, ...props }) => {
-  const baseStyles = 'flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
+const TextareaPreview: React.FC<any> = ({
+  variant,
+  size,
+  error,
+  disabled,
+  className,
+  ...props
+}) => {
+  const baseStyles =
+    'flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
 
   return (
     <textarea
       className={cn(
         baseStyles,
-        error && 'border-red-500 text-red-900 focus:border-red-500 focus:ring-red-500',
+        error &&
+          'border-red-500 text-red-900 focus:border-red-500 focus:ring-red-500',
         className
       )}
       placeholder="Enter your message..."
@@ -398,11 +492,16 @@ const TextareaPreview: React.FC<any> = ({ variant, size, error, disabled, classN
   )
 }
 
-const CheckboxPreview: React.FC<any> = ({ size, disabled, className, ...props }) => {
+const CheckboxPreview: React.FC<any> = ({
+  size,
+  disabled,
+  className,
+  ...props
+}) => {
   const sizeStyles = {
     sm: 'h-4 w-4',
     md: 'h-5 w-5',
-    lg: 'h-6 w-6'
+    lg: 'h-6 w-6',
   }
 
   return (
@@ -424,11 +523,16 @@ const CheckboxPreview: React.FC<any> = ({ size, disabled, className, ...props })
   )
 }
 
-const RadioPreview: React.FC<any> = ({ size, disabled, className, ...props }) => {
+const RadioPreview: React.FC<any> = ({
+  size,
+  disabled,
+  className,
+  ...props
+}) => {
   const sizeStyles = {
     sm: 'h-4 w-4',
     md: 'h-5 w-5',
-    lg: 'h-6 w-6'
+    lg: 'h-6 w-6',
   }
 
   return (
@@ -450,13 +554,18 @@ const RadioPreview: React.FC<any> = ({ size, disabled, className, ...props }) =>
   )
 }
 
-const SwitchPreview: React.FC<any> = ({ size, disabled, className, ...props }) => {
+const SwitchPreview: React.FC<any> = ({
+  size,
+  disabled,
+  className,
+  ...props
+}) => {
   const [checked, setChecked] = useState(false)
-  
+
   const sizeStyles = {
     sm: 'h-4 w-7',
     md: 'h-5 w-9',
-    lg: 'h-6 w-11'
+    lg: 'h-6 w-11',
   }
 
   return (
@@ -478,7 +587,13 @@ const SwitchPreview: React.FC<any> = ({ size, disabled, className, ...props }) =
           className={cn(
             'pointer-events-none inline-block rounded-full bg-white shadow transform ring-0 transition duration-200 ease-in-out',
             size === 'sm' ? 'h-3 w-3' : size === 'lg' ? 'h-5 w-5' : 'h-4 w-4',
-            checked ? (size === 'sm' ? 'translate-x-3' : size === 'lg' ? 'translate-x-5' : 'translate-x-4') : 'translate-x-0'
+            checked
+              ? size === 'sm'
+                ? 'translate-x-3'
+                : size === 'lg'
+                  ? 'translate-x-5'
+                  : 'translate-x-4'
+              : 'translate-x-0'
           )}
         />
       </button>
@@ -494,14 +609,15 @@ const AlertPreview: React.FC<any> = ({ variant, className, ...props }) => {
     default: 'bg-blue-50 border-blue-200 text-blue-800',
     success: 'bg-green-50 border-green-200 text-green-800',
     warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-    error: 'bg-red-50 border-red-200 text-red-800'
+    error: 'bg-red-50 border-red-200 text-red-800',
   }
 
   return (
     <div
       className={cn(
         'rounded-lg border p-4',
-        variantStyles[variant as keyof typeof variantStyles] || variantStyles.default,
+        variantStyles[variant as keyof typeof variantStyles] ||
+          variantStyles.default,
         className
       )}
       {...props}
@@ -515,35 +631,42 @@ const AlertPreview: React.FC<any> = ({ variant, className, ...props }) => {
         </div>
       </div>
       <div className="mt-1 text-sm opacity-90">
-        This is a sample alert message demonstrating the {variant || 'default'} variant.
+        This is a sample alert message demonstrating the {variant || 'default'}{' '}
+        variant.
       </div>
     </div>
   )
 }
 
-const BadgePreview: React.FC<any> = ({ variant, size, className, ...props }) => {
+const BadgePreview: React.FC<any> = ({
+  variant,
+  size,
+  className,
+  ...props
+}) => {
   const baseStyles = 'inline-flex items-center rounded-full font-medium'
-  
+
   const variantStyles = {
     default: 'bg-gray-100 text-gray-800',
     primary: 'bg-primary-100 text-primary-800',
     secondary: 'bg-secondary-100 text-secondary-800',
     success: 'bg-green-100 text-green-800',
     warning: 'bg-yellow-100 text-yellow-800',
-    error: 'bg-red-100 text-red-800'
+    error: 'bg-red-100 text-red-800',
   }
 
   const sizeStyles = {
     sm: 'px-2 py-1 text-xs',
     md: 'px-2.5 py-1.5 text-sm',
-    lg: 'px-3 py-2 text-base'
+    lg: 'px-3 py-2 text-base',
   }
 
   return (
     <span
       className={cn(
         baseStyles,
-        variantStyles[variant as keyof typeof variantStyles] || variantStyles.default,
+        variantStyles[variant as keyof typeof variantStyles] ||
+          variantStyles.default,
         sizeStyles[size as keyof typeof sizeStyles] || sizeStyles.md,
         className
       )}
@@ -559,7 +682,7 @@ const AvatarPreview: React.FC<any> = ({ size, className, ...props }) => {
     sm: 'h-8 w-8',
     md: 'h-10 w-10',
     lg: 'h-12 w-12',
-    xl: 'h-16 w-16'
+    xl: 'h-16 w-16',
   }
 
   return (
@@ -576,13 +699,18 @@ const AvatarPreview: React.FC<any> = ({ size, className, ...props }) => {
   )
 }
 
-const ProgressPreview: React.FC<any> = ({ variant, size, className, ...props }) => {
+const ProgressPreview: React.FC<any> = ({
+  variant,
+  size,
+  className,
+  ...props
+}) => {
   const [progress, setProgress] = useState(65)
 
   const sizeStyles = {
     sm: 'h-1',
     md: 'h-2',
-    lg: 'h-3'
+    lg: 'h-3',
   }
 
   return (
@@ -607,7 +735,13 @@ const ProgressPreview: React.FC<any> = ({ variant, size, className, ...props }) 
   )
 }
 
-const DefaultComponentPreview: React.FC<any> = ({ componentName, variant, size, className, ...props }) => {
+const DefaultComponentPreview: React.FC<any> = ({
+  componentName,
+  variant,
+  size,
+  className,
+  ...props
+}) => {
   return (
     <div
       className={cn(
@@ -616,9 +750,7 @@ const DefaultComponentPreview: React.FC<any> = ({ componentName, variant, size, 
       )}
       {...props}
     >
-      <div className="text-gray-600 text-sm">
-        {componentName} Component
-      </div>
+      <div className="text-gray-600 text-sm">{componentName} Component</div>
       <div className="text-xs text-gray-500 mt-1">
         Variant: {variant} | Size: {size}
       </div>

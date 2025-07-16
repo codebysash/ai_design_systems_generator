@@ -1,4 +1,8 @@
-import { GeneratedComponent, DesignSystemConfig, GeneratedDesignSystem } from '@/types'
+import {
+  GeneratedComponent,
+  DesignSystemConfig,
+  GeneratedDesignSystem,
+} from '@/types'
 import { componentCodeGenerator, CodeGenerationOptions } from './code-generator'
 import { typeGenerator, TypeGenerationOptions } from './type-generator'
 import { accessibilityValidator } from './accessibility'
@@ -71,7 +75,7 @@ export class ComponentLibraryGenerator {
       exports,
       packageJson,
       readme,
-      metadata
+      metadata,
     }
   }
 
@@ -82,7 +86,11 @@ export class ComponentLibraryGenerator {
     const generatedComponents: GeneratedComponentFile[] = []
 
     for (const component of designSystem.components) {
-      const generatedFile = await this.generateComponent(component, designSystem.designSystem, options)
+      const generatedFile = await this.generateComponent(
+        component,
+        designSystem.designSystem,
+        options
+      )
       generatedComponents.push(generatedFile)
     }
 
@@ -95,13 +103,22 @@ export class ComponentLibraryGenerator {
     options: ComponentLibraryOptions
   ): Promise<GeneratedComponentFile> {
     // Generate accessibility report and apply fixes
-    const accessibilityReport = this.accessibilityValidator.validateComponent(component, designSystem)
-    const fixedComponent = this.accessibilityValidator.applyFixes(component, accessibilityReport.fixes)
+    const accessibilityReport = this.accessibilityValidator.validateComponent(
+      component,
+      designSystem
+    )
+    const fixedComponent = this.accessibilityValidator.applyFixes(
+      component,
+      accessibilityReport.fixes
+    )
 
     // Generate variant system
-    const variantSystem = options.variants ? 
-      this.variantGenerator.generateVariantSystem(fixedComponent, designSystem) : 
-      null
+    const variantSystem = options.variants
+      ? this.variantGenerator.generateVariantSystem(
+          fixedComponent,
+          designSystem
+        )
+      : null
 
     // Generate code
     const codeOptions: CodeGenerationOptions = {
@@ -112,10 +129,14 @@ export class ComponentLibraryGenerator {
       includeStories: options.includeStories,
       includeDocumentation: options.includeDocumentation,
       accessibility: options.accessibility,
-      variant: variantSystem ? 'compound' : 'default'
+      variant: variantSystem ? 'compound' : 'default',
     }
 
-    const generatedCode = this.codeGenerator.generateComponent(fixedComponent, designSystem, codeOptions)
+    const generatedCode = this.codeGenerator.generateComponent(
+      fixedComponent,
+      designSystem,
+      codeOptions
+    )
 
     // Generate types
     const typeOptions: TypeGenerationOptions = {
@@ -126,19 +147,32 @@ export class ComponentLibraryGenerator {
       includePolymorphicTypes: false,
       generateEnums: false,
       generateUnions: true,
-      generateGenerics: false
+      generateGenerics: false,
     }
 
-    const generatedTypes = this.typeGenerator.generateTypes(fixedComponent, designSystem, typeOptions)
+    const generatedTypes = this.typeGenerator.generateTypes(
+      fixedComponent,
+      designSystem,
+      typeOptions
+    )
 
     // Generate variant code if enabled
     let variantCode = ''
-    if (variantSystem) {
-      variantCode = this.variantGenerator.generateVariantCode(fixedComponent, variantSystem, options.framework)
+    if (variantSystem && options.framework !== 'svelte') {
+      variantCode = this.variantGenerator.generateVariantCode(
+        fixedComponent,
+        variantSystem,
+        options.framework
+      )
     }
 
     // Combine all code
-    const finalCode = this.combineComponentCode(generatedCode, generatedTypes, variantCode, options)
+    const finalCode = this.combineComponentCode(
+      generatedCode,
+      generatedTypes,
+      variantCode,
+      options
+    )
 
     return {
       name: component.name,
@@ -149,7 +183,7 @@ export class ComponentLibraryGenerator {
       tests: generatedCode.tests,
       stories: generatedCode.stories,
       documentation: generatedCode.documentation,
-      accessibilityReport
+      accessibilityReport,
     }
   }
 
@@ -184,22 +218,30 @@ export class ComponentLibraryGenerator {
     return sections.filter(Boolean).join('\n\n')
   }
 
-  private generateGlobalTypes(components: GeneratedComponent[], options: ComponentLibraryOptions): string {
+  private generateGlobalTypes(
+    components: GeneratedComponent[],
+    options: ComponentLibraryOptions
+  ): string {
     if (options.language !== 'typescript') return ''
 
     return this.typeGenerator.generateGlobalTypes(components)
   }
 
-  private generateExports(components: GeneratedComponent[], options: ComponentLibraryOptions): string {
-    const componentExports = components.map(component => {
-      const exports = [`export { ${component.name} }`]
-      
-      if (options.language === 'typescript') {
-        exports.push(`export type { ${component.name}Props }`)
-      }
+  private generateExports(
+    components: GeneratedComponent[],
+    options: ComponentLibraryOptions
+  ): string {
+    const componentExports = components
+      .map(component => {
+        const exports = [`export { ${component.name} }`]
 
-      return exports.join('\n')
-    }).join('\n')
+        if (options.language === 'typescript') {
+          exports.push(`export type { ${component.name}Props }`)
+        }
+
+        return exports.join('\n')
+      })
+      .join('\n')
 
     // Add global exports
     const globalExports = `
@@ -212,19 +254,26 @@ export * from './themes'
     return `${componentExports}\n${globalExports}`
   }
 
-  private generatePackageJson(designSystem: GeneratedDesignSystem, options: ComponentLibraryOptions): string {
+  private generatePackageJson(
+    designSystem: GeneratedDesignSystem,
+    options: ComponentLibraryOptions
+  ): string {
     const packageJson = {
       name: designSystem.designSystem.name.toLowerCase().replace(/\s+/g, '-'),
       version: designSystem.metadata.version,
       description: designSystem.designSystem.description,
-      main: options.language === 'typescript' ? 'dist/index.js' : 'src/index.js',
+      main:
+        options.language === 'typescript' ? 'dist/index.js' : 'src/index.js',
       types: options.language === 'typescript' ? 'dist/index.d.ts' : undefined,
       scripts: {
-        build: options.language === 'typescript' ? 'tsc' : 'babel src --out-dir dist',
+        build:
+          options.language === 'typescript'
+            ? 'tsc'
+            : 'babel src --out-dir dist',
         test: 'jest',
         'test:watch': 'jest --watch',
         storybook: 'storybook dev -p 6006',
-        'build-storybook': 'storybook build'
+        'build-storybook': 'storybook build',
       },
       dependencies: this.getPackageDependencies(options),
       devDependencies: this.getPackageDevDependencies(options),
@@ -236,27 +285,30 @@ export * from './themes'
         'typescript',
         'tailwind',
         'accessibility',
-        'ui'
+        'ui',
       ],
       author: 'AI Design System Generator',
       license: 'MIT',
       repository: {
         type: 'git',
-        url: 'https://github.com/your-org/design-system.git'
+        url: 'https://github.com/your-org/design-system.git',
       },
       files: ['dist', 'src'],
       engines: {
-        node: '>=16.0.0'
-      }
+        node: '>=16.0.0',
+      },
     }
 
     return JSON.stringify(packageJson, null, 2)
   }
 
-  private generateReadme(designSystem: GeneratedDesignSystem, options: ComponentLibraryOptions): string {
-    const componentList = designSystem.components.map(component => 
-      `- **${component.name}** - ${component.description}`
-    ).join('\n')
+  private generateReadme(
+    designSystem: GeneratedDesignSystem,
+    options: ComponentLibraryOptions
+  ): string {
+    const componentList = designSystem.components
+      .map(component => `- **${component.name}** - ${component.description}`)
+      .join('\n')
 
     return `# ${designSystem.designSystem.name}
 
@@ -331,10 +383,13 @@ MIT © AI Design System Generator
     options: ComponentLibraryOptions,
     components: GeneratedComponentFile[]
   ) {
-    const totalAccessibilityScore = components.reduce((sum, component) => 
-      sum + component.accessibilityReport.score, 0
+    const totalAccessibilityScore = components.reduce(
+      (sum, component) => sum + component.accessibilityReport.score,
+      0
     )
-    const averageAccessibilityScore = Math.round(totalAccessibilityScore / components.length)
+    const averageAccessibilityScore = Math.round(
+      totalAccessibilityScore / components.length
+    )
 
     return {
       framework: options.framework,
@@ -343,16 +398,21 @@ MIT © AI Design System Generator
       totalComponents: components.length,
       accessibilityScore: averageAccessibilityScore,
       generatedAt: new Date().toISOString(),
-      version: designSystem.metadata.version
+      version: designSystem.metadata.version,
     }
   }
 
-  private getComponentPath(componentName: string, options: ComponentLibraryOptions): string {
+  private getComponentPath(
+    componentName: string,
+    options: ComponentLibraryOptions
+  ): string {
     const extension = options.language === 'typescript' ? '.tsx' : '.jsx'
     return `src/components/${componentName}${extension}`
   }
 
-  private getPackageDependencies(options: ComponentLibraryOptions): Record<string, string> {
+  private getPackageDependencies(
+    options: ComponentLibraryOptions
+  ): Record<string, string> {
     const dependencies: Record<string, string> = {}
 
     if (options.framework === 'react') {
@@ -373,7 +433,9 @@ MIT © AI Design System Generator
     return dependencies
   }
 
-  private getPackageDevDependencies(options: ComponentLibraryOptions): Record<string, string> {
+  private getPackageDevDependencies(
+    options: ComponentLibraryOptions
+  ): Record<string, string> {
     const devDependencies: Record<string, string> = {}
 
     if (options.language === 'typescript') {
@@ -396,7 +458,9 @@ MIT © AI Design System Generator
     return devDependencies
   }
 
-  private getPackagePeerDependencies(options: ComponentLibraryOptions): Record<string, string> {
+  private getPackagePeerDependencies(
+    options: ComponentLibraryOptions
+  ): Record<string, string> {
     const peerDependencies: Record<string, string> = {}
 
     if (options.framework === 'react') {
@@ -418,7 +482,7 @@ MIT © AI Design System Generator
       accessibility: true,
       variants: true,
       responsive: true,
-      darkMode: true
+      darkMode: true,
     }
   }
 }

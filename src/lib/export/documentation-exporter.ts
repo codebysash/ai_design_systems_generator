@@ -1,4 +1,8 @@
-import { GeneratedDesignSystem, GeneratedComponent, DesignSystemConfig } from '@/types'
+import {
+  GeneratedDesignSystem,
+  GeneratedComponent,
+  DesignSystemConfig,
+} from '@/types'
 import { designTokenGenerator } from '@/lib/design-system/tokens'
 import { themeGenerator } from '@/lib/design-system/themes'
 import { componentCodeGenerator } from '@/lib/design-system/code-generator'
@@ -93,9 +97,17 @@ export class DocumentationExporter {
     designSystem: GeneratedDesignSystem,
     options: DocumentationExportOptions = this.getDefaultOptions()
   ): Promise<DocumentationExportResult> {
-    const tokens = designTokenGenerator.generateTokens(designSystem.designSystem)
-    const lightTheme = themeGenerator.generateTheme(designSystem.designSystem, 'light')
-    const darkTheme = themeGenerator.generateTheme(designSystem.designSystem, 'dark')
+    const tokens = designTokenGenerator.generateTokens(
+      designSystem.designSystem
+    )
+    const lightTheme = themeGenerator.generateTheme(
+      designSystem.designSystem,
+      'light'
+    )
+    const darkTheme = themeGenerator.generateTheme(
+      designSystem.designSystem,
+      'dark'
+    )
 
     const files: DocumentationFile[] = []
     const assets: DocumentationAsset[] = []
@@ -107,11 +119,21 @@ export class DocumentationExporter {
     }
 
     if (options.includeTokens) {
-      files.push(...await this.generateTokensFiles(designSystem, tokens, lightTheme, darkTheme, options))
+      files.push(
+        ...(await this.generateTokensFiles(
+          designSystem,
+          tokens,
+          lightTheme,
+          darkTheme,
+          options
+        ))
+      )
     }
 
     if (options.includeComponents) {
-      files.push(...await this.generateComponentsFiles(designSystem, tokens, options))
+      files.push(
+        ...(await this.generateComponentsFiles(designSystem, tokens, options))
+      )
     }
 
     if (options.includeDesignPrinciples) {
@@ -142,7 +164,7 @@ export class DocumentationExporter {
 
     // Generate assets
     if (options.includeAssets) {
-      assets.push(...await this.generateAssets(designSystem, tokens, options))
+      assets.push(...(await this.generateAssets(designSystem, tokens, options)))
     }
 
     // Generate sitemap
@@ -159,7 +181,7 @@ export class DocumentationExporter {
       metadata,
       assets,
       sitemap,
-      navigation
+      navigation,
     }
   }
 
@@ -169,9 +191,9 @@ export class DocumentationExporter {
     options: DocumentationExportOptions
   ): Promise<DocumentationFile> {
     const config = designSystem.designSystem
-    
+
     let content = ''
-    
+
     if (options.format === 'markdown') {
       content = `# ${config.name || 'Design System'}
 
@@ -239,14 +261,15 @@ function App() {
 
 ### License
 
-${config.license || 'MIT'}
+MIT
 
 ### Contributing
 
 We welcome contributions! Please see our [contribution guidelines](./CONTRIBUTING.md) for more information.
 `
     } else if (options.format === 'html') {
-      content = this.generateHTMLWrapper(`
+      content = this.generateHTMLWrapper(
+        `
         <h1>${config.name || 'Design System'}</h1>
         <p>${config.description || 'A comprehensive design system for building consistent user interfaces.'}</p>
         
@@ -277,7 +300,10 @@ We welcome contributions! Please see our [contribution guidelines](./CONTRIBUTIN
         <ul>
           ${designSystem.components?.map(component => `<li><strong>${component.name}</strong>: ${component.description}</li>`).join('') || ''}
         </ul>
-      `, 'Overview', options)
+      `,
+        'Overview',
+        options
+      )
     }
 
     return {
@@ -288,7 +314,7 @@ We welcome contributions! Please see our [contribution guidelines](./CONTRIBUTIN
       title: config.name || 'Design System',
       description: config.description,
       keywords: ['design system', 'tokens', 'components', 'ui'],
-      lastModified: new Date().toISOString()
+      lastModified: new Date().toISOString(),
     }
   }
 
@@ -304,11 +330,21 @@ We welcome contributions! Please see our [contribution guidelines](./CONTRIBUTIN
     if (options.generateSeparateFiles) {
       // Generate separate files for each token category
       for (const [category, categoryTokens] of Object.entries(tokens)) {
-        files.push(await this.generateTokenCategoryFile(category, categoryTokens, lightTheme, darkTheme, options))
+        files.push(
+          await this.generateTokenCategoryFile(
+            category,
+            categoryTokens,
+            lightTheme,
+            darkTheme,
+            options
+          )
+        )
       }
     } else {
       // Generate single tokens file
-      files.push(await this.generateAllTokensFile(tokens, lightTheme, darkTheme, options))
+      files.push(
+        await this.generateAllTokensFile(tokens, lightTheme, darkTheme, options)
+      )
     }
 
     return files
@@ -322,9 +358,9 @@ We welcome contributions! Please see our [contribution guidelines](./CONTRIBUTIN
     options: DocumentationExportOptions
   ): Promise<DocumentationFile> {
     const categoryName = category.charAt(0).toUpperCase() + category.slice(1)
-    
+
     let content = ''
-    
+
     if (options.format === 'markdown') {
       content = `# ${categoryName} Tokens
 
@@ -339,7 +375,8 @@ ${options.includeCodeExamples ? this.generateTokensCodeExamples(categoryTokens, 
 ${options.includeUsageExamples ? this.generateTokensUsageExamples(categoryTokens, category) : ''}
 `
     } else if (options.format === 'html') {
-      content = this.generateHTMLWrapper(`
+      content = this.generateHTMLWrapper(
+        `
         <h1>${categoryName} Tokens</h1>
         <p>${this.getCategoryDescription(category)}</p>
         
@@ -349,18 +386,24 @@ ${options.includeUsageExamples ? this.generateTokensUsageExamples(categoryTokens
         ${options.includeCodeExamples ? `<h2>Code Examples</h2>${this.generateTokensCodeExamplesHTML(categoryTokens, category)}` : ''}
         
         ${options.includeUsageExamples ? `<h2>Usage Examples</h2>${this.generateTokensUsageExamplesHTML(categoryTokens, category)}` : ''}
-      `, `${categoryName} Tokens`, options)
+      `,
+        `${categoryName} Tokens`,
+        options
+      )
     }
 
     return {
-      path: options.format === 'html' ? `tokens/${category}.html` : `tokens/${category}.md`,
+      path:
+        options.format === 'html'
+          ? `tokens/${category}.html`
+          : `tokens/${category}.md`,
       content,
       type: options.format === 'html' ? 'html' : 'markdown',
       category: 'tokens',
       title: `${categoryName} Tokens`,
       description: this.getCategoryDescription(category),
       keywords: ['tokens', category],
-      lastModified: new Date().toISOString()
+      lastModified: new Date().toISOString(),
     }
   }
 
@@ -371,7 +414,7 @@ ${options.includeUsageExamples ? this.generateTokensUsageExamples(categoryTokens
     options: DocumentationExportOptions
   ): Promise<DocumentationFile> {
     let content = ''
-    
+
     if (options.format === 'markdown') {
       content = `# Design Tokens
 
@@ -379,9 +422,16 @@ Design tokens are the visual design atoms of the design system — specifically,
 
 ## Token Categories
 
-${Object.keys(tokens).map(category => `- [${category.charAt(0).toUpperCase() + category.slice(1)}](#${category})`).join('\n')}
+${Object.keys(tokens)
+  .map(
+    category =>
+      `- [${category.charAt(0).toUpperCase() + category.slice(1)}](#${category})`
+  )
+  .join('\n')}
 
-${Object.entries(tokens).map(([category, categoryTokens]) => `
+${Object.entries(tokens)
+  .map(
+    ([category, categoryTokens]) => `
 ## ${category.charAt(0).toUpperCase() + category.slice(1)}
 
 ${this.getCategoryDescription(category)}
@@ -389,25 +439,40 @@ ${this.getCategoryDescription(category)}
 ${this.generateTokensTable(categoryTokens, category)}
 
 ${options.includeCodeExamples ? this.generateTokensCodeExamples(categoryTokens, category) : ''}
-`).join('\n')}
+`
+  )
+  .join('\n')}
 `
     } else if (options.format === 'html') {
-      content = this.generateHTMLWrapper(`
+      content = this.generateHTMLWrapper(
+        `
         <h1>Design Tokens</h1>
         <p>Design tokens are the visual design atoms of the design system — specifically, they are named entities that store visual design attributes.</p>
         
         <h2>Token Categories</h2>
         <ul>
-          ${Object.keys(tokens).map(category => `<li><a href="#${category}">${category.charAt(0).toUpperCase() + category.slice(1)}</a></li>`).join('')}
+          ${Object.keys(tokens)
+            .map(
+              category =>
+                `<li><a href="#${category}">${category.charAt(0).toUpperCase() + category.slice(1)}</a></li>`
+            )
+            .join('')}
         </ul>
         
-        ${Object.entries(tokens).map(([category, categoryTokens]) => `
+        ${Object.entries(tokens)
+          .map(
+            ([category, categoryTokens]) => `
           <h2 id="${category}">${category.charAt(0).toUpperCase() + category.slice(1)}</h2>
           <p>${this.getCategoryDescription(category)}</p>
           ${this.generateTokensHTMLTable(categoryTokens, category)}
           ${options.includeCodeExamples ? this.generateTokensCodeExamplesHTML(categoryTokens, category) : ''}
-        `).join('')}
-      `, 'Design Tokens', options)
+        `
+          )
+          .join('')}
+      `,
+        'Design Tokens',
+        options
+      )
     }
 
     return {
@@ -418,7 +483,7 @@ ${options.includeCodeExamples ? this.generateTokensCodeExamples(categoryTokens, 
       title: 'Design Tokens',
       description: 'Complete reference of all design tokens',
       keywords: ['tokens', 'design tokens', 'variables'],
-      lastModified: new Date().toISOString()
+      lastModified: new Date().toISOString(),
     }
   }
 
@@ -433,11 +498,25 @@ ${options.includeCodeExamples ? this.generateTokensCodeExamples(categoryTokens, 
     if (options.generateSeparateFiles) {
       // Generate separate files for each component
       for (const component of components) {
-        files.push(await this.generateComponentFile(component, designSystem, tokens, options))
+        files.push(
+          await this.generateComponentFile(
+            component,
+            designSystem,
+            tokens,
+            options
+          )
+        )
       }
     } else {
       // Generate single components file
-      files.push(await this.generateAllComponentsFile(components, designSystem, tokens, options))
+      files.push(
+        await this.generateAllComponentsFile(
+          components,
+          designSystem,
+          tokens,
+          options
+        )
+      )
     }
 
     return files
@@ -450,7 +529,7 @@ ${options.includeCodeExamples ? this.generateTokensCodeExamples(categoryTokens, 
     options: DocumentationExportOptions
   ): Promise<DocumentationFile> {
     let content = ''
-    
+
     if (options.format === 'markdown') {
       content = `# ${component.name}
 
@@ -462,26 +541,35 @@ ${this.generatePropsTable(component.props)}
 
 ## Variants
 
-${component.variants.map(variant => `
+${component.variants
+  .map(
+    variant => `
 ### ${variant.name}
 
 ${variant.description}
 
 ${options.includeCodeExamples ? this.generateComponentCodeExample(component, variant.name, options) : ''}
-`).join('\n')}
+`
+  )
+  .join('\n')}
 
 ## Sizes
 
 ${component.sizes.map(size => `- **${size}**: ${this.getSizeDescription(size)}`).join('\n')}
 
-${options.includeAccessibility ? `## Accessibility
+${
+  options.includeAccessibility
+    ? `## Accessibility
 
-${component.accessibility.map(feature => `- ${feature}`).join('\n')}` : ''}
+${component.accessibility.map(feature => `- ${feature}`).join('\n')}`
+    : ''
+}
 
 ${options.includeUsageExamples ? this.generateComponentUsageExamples(component, options) : ''}
 `
     } else if (options.format === 'html') {
-      content = this.generateHTMLWrapper(`
+      content = this.generateHTMLWrapper(
+        `
         <h1>${component.name}</h1>
         <p>${component.description}</p>
         
@@ -489,37 +577,55 @@ ${options.includeUsageExamples ? this.generateComponentUsageExamples(component, 
         ${this.generatePropsHTMLTable(component.props)}
         
         <h2>Variants</h2>
-        ${component.variants.map(variant => `
+        ${component.variants
+          .map(
+            variant => `
           <h3>${variant.name}</h3>
           <p>${variant.description}</p>
           ${options.includeCodeExamples ? this.generateComponentCodeExampleHTML(component, variant.name, options) : ''}
-        `).join('')}
+        `
+          )
+          .join('')}
         
         <h2>Sizes</h2>
         <ul>
           ${component.sizes.map(size => `<li><strong>${size}</strong>: ${this.getSizeDescription(size)}</li>`).join('')}
         </ul>
         
-        ${options.includeAccessibility ? `
+        ${
+          options.includeAccessibility
+            ? `
           <h2>Accessibility</h2>
           <ul>
             ${component.accessibility.map(feature => `<li>${feature}</li>`).join('')}
           </ul>
-        ` : ''}
+        `
+            : ''
+        }
         
         ${options.includeUsageExamples ? this.generateComponentUsageExamplesHTML(component, options) : ''}
-      `, component.name, options)
+      `,
+        component.name,
+        options
+      )
     }
 
     return {
-      path: options.format === 'html' ? `components/${component.name.toLowerCase()}.html` : `components/${component.name.toLowerCase()}.md`,
+      path:
+        options.format === 'html'
+          ? `components/${component.name.toLowerCase()}.html`
+          : `components/${component.name.toLowerCase()}.md`,
       content,
       type: options.format === 'html' ? 'html' : 'markdown',
       category: 'components',
       title: component.name,
       description: component.description,
-      keywords: ['component', component.name.toLowerCase(), ...component.variants.map(v => v.name)],
-      lastModified: new Date().toISOString()
+      keywords: [
+        'component',
+        component.name.toLowerCase(),
+        ...component.variants.map(v => v.name),
+      ],
+      lastModified: new Date().toISOString(),
     }
   }
 
@@ -530,7 +636,7 @@ ${options.includeUsageExamples ? this.generateComponentUsageExamples(component, 
     options: DocumentationExportOptions
   ): Promise<DocumentationFile> {
     let content = ''
-    
+
     if (options.format === 'markdown') {
       content = `# Components
 
@@ -540,7 +646,9 @@ This design system includes ${components.length} components, each designed to be
 
 ${components.map(component => `- [${component.name}](#${component.name.toLowerCase()})`).join('\n')}
 
-${components.map(component => `
+${components
+  .map(
+    component => `
 ## ${component.name}
 
 ${component.description}
@@ -557,15 +665,22 @@ ${component.variants.map(variant => `- **${variant.name}**: ${variant.descriptio
 
 ${component.sizes.map(size => `- **${size}**: ${this.getSizeDescription(size)}`).join('\n')}
 
-${options.includeAccessibility ? `### Accessibility
+${
+  options.includeAccessibility
+    ? `### Accessibility
 
-${component.accessibility.map(feature => `- ${feature}`).join('\n')}` : ''}
+${component.accessibility.map(feature => `- ${feature}`).join('\n')}`
+    : ''
+}
 
 ${options.includeCodeExamples ? this.generateComponentCodeExample(component, component.variants[0]?.name || 'default', options) : ''}
-`).join('\n')}
+`
+  )
+  .join('\n')}
 `
     } else if (options.format === 'html') {
-      content = this.generateHTMLWrapper(`
+      content = this.generateHTMLWrapper(
+        `
         <h1>Components</h1>
         <p>This design system includes ${components.length} components, each designed to be accessible, consistent, and easy to use.</p>
         
@@ -574,7 +689,9 @@ ${options.includeCodeExamples ? this.generateComponentCodeExample(component, com
           ${components.map(component => `<li><a href="#${component.name.toLowerCase()}">${component.name}</a></li>`).join('')}
         </ul>
         
-        ${components.map(component => `
+        ${components
+          .map(
+            component => `
           <h2 id="${component.name.toLowerCase()}">${component.name}</h2>
           <p>${component.description}</p>
           
@@ -591,16 +708,25 @@ ${options.includeCodeExamples ? this.generateComponentCodeExample(component, com
             ${component.sizes.map(size => `<li><strong>${size}</strong>: ${this.getSizeDescription(size)}</li>`).join('')}
           </ul>
           
-          ${options.includeAccessibility ? `
+          ${
+            options.includeAccessibility
+              ? `
             <h3>Accessibility</h3>
             <ul>
               ${component.accessibility.map(feature => `<li>${feature}</li>`).join('')}
             </ul>
-          ` : ''}
+          `
+              : ''
+          }
           
           ${options.includeCodeExamples ? this.generateComponentCodeExampleHTML(component, component.variants[0]?.name || 'default', options) : ''}
-        `).join('')}
-      `, 'Components', options)
+        `
+          )
+          .join('')}
+      `,
+        'Components',
+        options
+      )
     }
 
     return {
@@ -611,7 +737,7 @@ ${options.includeCodeExamples ? this.generateComponentCodeExample(component, com
       title: 'Components',
       description: 'Complete reference of all components',
       keywords: ['components', 'ui', 'interface'],
-      lastModified: new Date().toISOString()
+      lastModified: new Date().toISOString(),
     }
   }
 
@@ -620,7 +746,7 @@ ${options.includeCodeExamples ? this.generateComponentCodeExample(component, com
     options: DocumentationExportOptions
   ): Promise<DocumentationFile> {
     let content = ''
-    
+
     if (options.format === 'markdown') {
       content = `# Design Principles
 
@@ -674,7 +800,8 @@ Our design philosophy centers on creating interfaces that are:
 - **Inclusivity**: Designing for everyone
 `
     } else if (options.format === 'html') {
-      content = this.generateHTMLWrapper(`
+      content = this.generateHTMLWrapper(
+        `
         <h1>Design Principles</h1>
         <p>Our design system is built on a foundation of key principles that guide every decision we make.</p>
         
@@ -708,7 +835,10 @@ Our design philosophy centers on creating interfaces that are:
         
         <h3>Document Your Customizations</h3>
         <p>When extending the system, document your customizations for future maintainers.</p>
-      `, 'Design Principles', options)
+      `,
+        'Design Principles',
+        options
+      )
     }
 
     return {
@@ -719,7 +849,7 @@ Our design philosophy centers on creating interfaces that are:
       title: 'Design Principles',
       description: 'Core principles and guidelines for the design system',
       keywords: ['principles', 'guidelines', 'philosophy'],
-      lastModified: new Date().toISOString()
+      lastModified: new Date().toISOString(),
     }
   }
 
@@ -728,7 +858,7 @@ Our design philosophy centers on creating interfaces that are:
     options: DocumentationExportOptions
   ): Promise<DocumentationFile> {
     let content = ''
-    
+
     if (options.format === 'markdown') {
       content = `# Accessibility
 
@@ -825,7 +955,8 @@ Include users with disabilities in your testing process:
 - [Orca](https://help.gnome.org/users/orca/stable/) (Linux)
 `
     } else if (options.format === 'html') {
-      content = this.generateHTMLWrapper(`
+      content = this.generateHTMLWrapper(
+        `
         <h1>Accessibility</h1>
         <p>Accessibility is a core principle of our design system. We are committed to creating inclusive experiences that work for everyone.</p>
         
@@ -861,18 +992,22 @@ Include users with disabilities in your testing process:
           <li>ARIA landmarks and roles</li>
           <li>Descriptive alt text for images</li>
         </ul>
-      `, 'Accessibility', options)
+      `,
+        'Accessibility',
+        options
+      )
     }
 
     return {
-      path: options.format === 'html' ? 'accessibility.html' : 'accessibility.md',
+      path:
+        options.format === 'html' ? 'accessibility.html' : 'accessibility.md',
       content,
       type: options.format === 'html' ? 'html' : 'markdown',
       category: 'guides',
       title: 'Accessibility',
       description: 'Accessibility guidelines and standards',
       keywords: ['accessibility', 'a11y', 'wcag', 'inclusive'],
-      lastModified: new Date().toISOString()
+      lastModified: new Date().toISOString(),
     }
   }
 
@@ -881,7 +1016,7 @@ Include users with disabilities in your testing process:
     options: DocumentationExportOptions
   ): Promise<DocumentationFile> {
     let content = ''
-    
+
     if (options.format === 'markdown') {
       content = `# Contributing
 
@@ -1010,7 +1145,8 @@ Contributors will be recognized in:
 Thank you for contributing to our design system!
 `
     } else if (options.format === 'html') {
-      content = this.generateHTMLWrapper(`
+      content = this.generateHTMLWrapper(
+        `
         <h1>Contributing</h1>
         <p>We welcome contributions to our design system! This guide will help you get started.</p>
         
@@ -1057,7 +1193,10 @@ npm run build</code></pre>
           <li>Include accessibility tests</li>
           <li>Test across different browsers</li>
         </ul>
-      `, 'Contributing', options)
+      `,
+        'Contributing',
+        options
+      )
     }
 
     return {
@@ -1068,7 +1207,7 @@ npm run build</code></pre>
       title: 'Contributing',
       description: 'Guide for contributing to the design system',
       keywords: ['contributing', 'development', 'guidelines'],
-      lastModified: new Date().toISOString()
+      lastModified: new Date().toISOString(),
     }
   }
 
@@ -1077,7 +1216,7 @@ npm run build</code></pre>
     options: DocumentationExportOptions
   ): Promise<DocumentationFile> {
     let content = ''
-    
+
     if (options.format === 'markdown') {
       content = `# Changelog
 
@@ -1154,7 +1293,8 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for information on how to contribute to
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 `
     } else if (options.format === 'html') {
-      content = this.generateHTMLWrapper(`
+      content = this.generateHTMLWrapper(
+        `
         <h1>Changelog</h1>
         <p>All notable changes to this design system will be documented in this file.</p>
         
@@ -1185,7 +1325,10 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
           <li>Border radius tokens for consistent corner styles</li>
           <li>Elevation tokens for depth and shadows</li>
         </ul>
-      `, 'Changelog', options)
+      `,
+        'Changelog',
+        options
+      )
     }
 
     return {
@@ -1196,7 +1339,7 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
       title: 'Changelog',
       description: 'Version history and changes',
       keywords: ['changelog', 'history', 'versions'],
-      lastModified: new Date().toISOString()
+      lastModified: new Date().toISOString(),
     }
   }
 
@@ -1205,33 +1348,44 @@ This project is licensed under the MIT License - see the [LICENSE](./LICENSE) fi
     options: DocumentationExportOptions
   ): Promise<DocumentationFile> {
     let content = ''
-    
+
     if (options.format === 'markdown') {
       content = `# ${section.title}
 
 ${section.content}
 `
     } else if (options.format === 'html') {
-      content = this.generateHTMLWrapper(`
+      content = this.generateHTMLWrapper(
+        `
         <h1>${section.title}</h1>
         <div>${section.content}</div>
-      `, section.title, options)
+      `,
+        section.title,
+        options
+      )
     }
 
     return {
-      path: options.format === 'html' ? `${section.title.toLowerCase().replace(/\s+/g, '-')}.html` : `${section.title.toLowerCase().replace(/\s+/g, '-')}.md`,
+      path:
+        options.format === 'html'
+          ? `${section.title.toLowerCase().replace(/\s+/g, '-')}.html`
+          : `${section.title.toLowerCase().replace(/\s+/g, '-')}.md`,
       content,
       type: options.format === 'html' ? 'html' : 'markdown',
       category: section.category,
       title: section.title,
       description: section.content.substring(0, 200) + '...',
       keywords: [section.title.toLowerCase()],
-      lastModified: new Date().toISOString()
+      lastModified: new Date().toISOString(),
     }
   }
 
   // Helper methods
-  private generateHTMLWrapper(content: string, title: string, options: DocumentationExportOptions): string {
+  private generateHTMLWrapper(
+    content: string,
+    title: string,
+    options: DocumentationExportOptions
+  ): string {
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1290,12 +1444,16 @@ ${section.content}
   private generateTokensTable(tokens: any, category: string): string {
     let table = '| Token | Value | Preview |\n'
     table += '|-------|-------|----------|\n'
-    
+
     const generateTokenRows = (obj: any, prefix = ''): void => {
       for (const [key, value] of Object.entries(obj)) {
         const tokenName = prefix ? `${prefix}.${key}` : key
-        
-        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+
+        if (
+          typeof value === 'object' &&
+          value !== null &&
+          !Array.isArray(value)
+        ) {
           generateTokenRows(value, tokenName)
         } else {
           const preview = this.generateTokenPreview(value, category)
@@ -1303,19 +1461,24 @@ ${section.content}
         }
       }
     }
-    
+
     generateTokenRows(tokens)
     return table
   }
 
   private generateTokensHTMLTable(tokens: any, category: string): string {
-    let table = '<table><thead><tr><th>Token</th><th>Value</th><th>Preview</th></tr></thead><tbody>'
-    
+    let table =
+      '<table><thead><tr><th>Token</th><th>Value</th><th>Preview</th></tr></thead><tbody>'
+
     const generateTokenRows = (obj: any, prefix = ''): void => {
       for (const [key, value] of Object.entries(obj)) {
         const tokenName = prefix ? `${prefix}.${key}` : key
-        
-        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+
+        if (
+          typeof value === 'object' &&
+          value !== null &&
+          !Array.isArray(value)
+        ) {
           generateTokenRows(value, tokenName)
         } else {
           const preview = this.generateTokenPreviewHTML(value, category)
@@ -1323,7 +1486,7 @@ ${section.content}
         }
       }
     }
-    
+
     generateTokenRows(tokens)
     table += '</tbody></table>'
     return table
@@ -1354,26 +1517,31 @@ ${section.content}
   private generatePropsTable(props: any[]): string {
     let table = '| Name | Type | Required | Default | Description |\n'
     table += '|------|------|----------|---------|-------------|\n'
-    
+
     for (const prop of props) {
       table += `| ${prop.name} | ${prop.type} | ${prop.required ? 'Yes' : 'No'} | ${prop.default || '-'} | ${prop.description || '-'} |\n`
     }
-    
+
     return table
   }
 
   private generatePropsHTMLTable(props: any[]): string {
-    let table = '<table><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody>'
-    
+    let table =
+      '<table><thead><tr><th>Name</th><th>Type</th><th>Required</th><th>Default</th><th>Description</th></tr></thead><tbody>'
+
     for (const prop of props) {
       table += `<tr><td>${prop.name}</td><td>${prop.type}</td><td>${prop.required ? 'Yes' : 'No'}</td><td>${prop.default || '-'}</td><td>${prop.description || '-'}</td></tr>`
     }
-    
+
     table += '</tbody></table>'
     return table
   }
 
-  private generateComponentCodeExample(component: GeneratedComponent, variant: string, options: DocumentationExportOptions): string {
+  private generateComponentCodeExample(
+    component: GeneratedComponent,
+    variant: string,
+    options: DocumentationExportOptions
+  ): string {
     return `
 ## Example
 
@@ -1397,7 +1565,11 @@ function Example() {
 `
   }
 
-  private generateComponentCodeExampleHTML(component: GeneratedComponent, variant: string, options: DocumentationExportOptions): string {
+  private generateComponentCodeExampleHTML(
+    component: GeneratedComponent,
+    variant: string,
+    options: DocumentationExportOptions
+  ): string {
     return `
 <h2>Example</h2>
 <pre><code>import { ${component.name} } from '@your-org/design-system'
@@ -1412,7 +1584,10 @@ function Example() {
 `
   }
 
-  private generateComponentUsageExamples(component: GeneratedComponent, options: DocumentationExportOptions): string {
+  private generateComponentUsageExamples(
+    component: GeneratedComponent,
+    options: DocumentationExportOptions
+  ): string {
     return `
 ## Usage Examples
 
@@ -1437,7 +1612,10 @@ function Example() {
 `
   }
 
-  private generateComponentUsageExamplesHTML(component: GeneratedComponent, options: DocumentationExportOptions): string {
+  private generateComponentUsageExamplesHTML(
+    component: GeneratedComponent,
+    options: DocumentationExportOptions
+  ): string {
     return `
 <h2>Usage Examples</h2>
 
@@ -1463,13 +1641,17 @@ function Example() {
 ### CSS Variables
 \`\`\`css
 :root {
-  ${Object.entries(tokens).map(([key, value]) => `--${category}-${key}: ${value};`).join('\n  ')}
+  ${Object.entries(tokens)
+    .map(([key, value]) => `--${category}-${key}: ${value};`)
+    .join('\n  ')}
 }
 \`\`\`
 
 ### SCSS Variables
 \`\`\`scss
-${Object.entries(tokens).map(([key, value]) => `$${category}-${key}: ${value};`).join('\n')}
+${Object.entries(tokens)
+  .map(([key, value]) => `$${category}-${key}: ${value};`)
+  .join('\n')}
 \`\`\`
 
 ### JavaScript
@@ -1479,17 +1661,24 @@ const ${category} = ${JSON.stringify(tokens, null, 2)}
 `
   }
 
-  private generateTokensCodeExamplesHTML(tokens: any, category: string): string {
+  private generateTokensCodeExamplesHTML(
+    tokens: any,
+    category: string
+  ): string {
     return `
 <h2>Code Examples</h2>
 
 <h3>CSS Variables</h3>
 <pre><code>:root {
-  ${Object.entries(tokens).map(([key, value]) => `--${category}-${key}: ${value};`).join('\n  ')}
+  ${Object.entries(tokens)
+    .map(([key, value]) => `--${category}-${key}: ${value};`)
+    .join('\n  ')}
 }</code></pre>
 
 <h3>SCSS Variables</h3>
-<pre><code>${Object.entries(tokens).map(([key, value]) => `$${category}-${key}: ${value};`).join('\n')}</code></pre>
+<pre><code>${Object.entries(tokens)
+      .map(([key, value]) => `$${category}-${key}: ${value};`)
+      .join('\n')}</code></pre>
 
 <h3>JavaScript</h3>
 <pre><code>const ${category} = ${JSON.stringify(tokens, null, 2)}</code></pre>
@@ -1520,7 +1709,10 @@ const styles = {
 `
   }
 
-  private generateTokensUsageExamplesHTML(tokens: any, category: string): string {
+  private generateTokensUsageExamplesHTML(
+    tokens: any,
+    category: string
+  ): string {
     return `
 <h2>Usage Examples</h2>
 
@@ -1540,13 +1732,16 @@ const styles = {
 `
   }
 
-  private generateNavigation(files: DocumentationFile[], options: DocumentationExportOptions): NavigationItem[] {
+  private generateNavigation(
+    files: DocumentationFile[],
+    options: DocumentationExportOptions
+  ): NavigationItem[] {
     const navigation: NavigationItem[] = []
     const categories = ['overview', 'tokens', 'components', 'guides', 'api']
-    
+
     categories.forEach((category, index) => {
       const categoryFiles = files.filter(file => file.category === category)
-      
+
       if (categoryFiles.length > 0) {
         navigation.push({
           title: category.charAt(0).toUpperCase() + category.slice(1),
@@ -1557,12 +1752,12 @@ const styles = {
             title: file.title,
             path: `/${file.path}`,
             category: file.category,
-            order: 0
-          }))
+            order: 0,
+          })),
         })
       }
     })
-    
+
     return navigation
   }
 
@@ -1572,25 +1767,25 @@ const styles = {
     options: DocumentationExportOptions
   ): Promise<DocumentationAsset[]> {
     const assets: DocumentationAsset[] = []
-    
+
     // Generate CSS file
     assets.push({
       path: 'assets/styles.css',
       content: this.generateAssetCSS(tokens),
-      type: 'css' as const,
+      type: 'font' as const,
       mimeType: 'text/css',
-      size: 0
+      size: 0,
     })
-    
+
     // Generate JavaScript file
     assets.push({
       path: 'assets/tokens.js',
       content: `const tokens = ${JSON.stringify(tokens, null, 2)};\nexport default tokens;`,
-      type: 'js' as const,
+      type: 'font' as const,
       mimeType: 'application/javascript',
-      size: 0
+      size: 0,
     })
-    
+
     return assets
   }
 
@@ -1606,12 +1801,16 @@ const styles = {
 
   private generateCSSVariables(tokens: any): string {
     let css = ''
-    
+
     const generateVars = (obj: any, path: string[] = []): void => {
       for (const [key, value] of Object.entries(obj)) {
         const currentPath = [...path, key]
-        
-        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+
+        if (
+          typeof value === 'object' &&
+          value !== null &&
+          !Array.isArray(value)
+        ) {
           generateVars(value, currentPath)
         } else {
           const varName = currentPath.join('-')
@@ -1619,24 +1818,33 @@ const styles = {
         }
       }
     }
-    
+
     generateVars(tokens)
     return css
   }
 
-  private generateSitemap(files: DocumentationFile[], options: DocumentationExportOptions): string {
-    const urls = files.map(file => `https://your-domain.com/${file.path}`).join('\n')
-    
+  private generateSitemap(
+    files: DocumentationFile[],
+    options: DocumentationExportOptions
+  ): string {
+    const urls = files
+      .map(file => `https://your-domain.com/${file.path}`)
+      .join('\n')
+
     return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  ${files.map(file => `
+  ${files
+    .map(
+      file => `
     <url>
       <loc>https://your-domain.com/${file.path}</loc>
       <lastmod>${file.lastModified}</lastmod>
       <changefreq>weekly</changefreq>
       <priority>0.8</priority>
     </url>
-  `).join('')}
+  `
+    )
+    .join('')}
 </urlset>`
   }
 
@@ -1646,31 +1854,42 @@ const styles = {
     options: DocumentationExportOptions
   ): DocumentationMetadata {
     const totalSize = files.reduce((sum, file) => sum + file.content.length, 0)
-    
+
     return {
       title: designSystem.designSystem.name || 'Design System',
-      description: designSystem.designSystem.description || 'AI-generated design system documentation',
+      description:
+        designSystem.designSystem.description ||
+        'AI-generated design system documentation',
       version: '1.0.0',
       generatedAt: new Date().toISOString(),
       totalFiles: files.length,
       totalSize,
       components: designSystem.components?.length || 0,
       tokens: this.countTokens(designSystem.designSystem),
-      pages: files.length
+      pages: files.length,
     }
   }
 
   private getCategoryDescription(category: string): string {
     const descriptions: Record<string, string> = {
-      colors: 'Color tokens define the color palette for your design system, including primary, secondary, and semantic colors.',
-      typography: 'Typography tokens define font families, sizes, weights, and line heights for consistent text styling.',
-      spacing: 'Spacing tokens provide consistent spacing values for margins, padding, and gaps throughout your interface.',
-      borderRadius: 'Border radius tokens define consistent corner styles for components and elements.',
-      shadows: 'Shadow tokens create depth and hierarchy through consistent elevation styles.',
-      animation: 'Animation tokens define consistent timing, easing, and duration values for motion design.'
+      colors:
+        'Color tokens define the color palette for your design system, including primary, secondary, and semantic colors.',
+      typography:
+        'Typography tokens define font families, sizes, weights, and line heights for consistent text styling.',
+      spacing:
+        'Spacing tokens provide consistent spacing values for margins, padding, and gaps throughout your interface.',
+      borderRadius:
+        'Border radius tokens define consistent corner styles for components and elements.',
+      shadows:
+        'Shadow tokens create depth and hierarchy through consistent elevation styles.',
+      animation:
+        'Animation tokens define consistent timing, easing, and duration values for motion design.',
     }
-    
-    return descriptions[category] || 'Design tokens for consistent styling across your interface.'
+
+    return (
+      descriptions[category] ||
+      'Design tokens for consistent styling across your interface.'
+    )
   }
 
   private getSizeDescription(size: string): string {
@@ -1679,25 +1898,29 @@ const styles = {
       sm: 'Small size for dense layouts',
       md: 'Medium size for standard use cases',
       lg: 'Large size for prominent elements',
-      xl: 'Extra large size for hero elements'
+      xl: 'Extra large size for hero elements',
     }
-    
+
     return descriptions[size] || 'Component size variant'
   }
 
   private countTokens(tokens: any): number {
     let count = 0
-    
+
     const countRecursive = (obj: any): void => {
       for (const [key, value] of Object.entries(obj)) {
-        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+        if (
+          typeof value === 'object' &&
+          value !== null &&
+          !Array.isArray(value)
+        ) {
           countRecursive(value)
         } else {
           count++
         }
       }
     }
-    
+
     countRecursive(tokens)
     return count
   }
@@ -1726,7 +1949,7 @@ const styles = {
       outputStyle: 'multi-page',
       includeMetadata: true,
       generateSitemap: false,
-      includeAnalytics: false
+      includeAnalytics: false,
     }
   }
 }

@@ -24,7 +24,7 @@ class DesignSystemCache {
   private maxCacheSize = 50 // Maximum number of cached design systems
   private defaultTTL = 30 * 60 * 1000 // 30 minutes in milliseconds
   private maxTTL = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
-  
+
   // Component-level cache for individual components
   private componentCache = new Map<string, CacheEntry<GeneratedComponent>>()
   private maxComponentCacheSize = 200
@@ -34,14 +34,14 @@ class DesignSystemCache {
    */
   private generateCacheKey(formData: DesignSystemFormData): string {
     const keyData = {
+      name: formData.name,
       description: formData.description,
       style: formData.style,
-      colors: formData.colors,
+      primaryColor: formData.primaryColor,
       industry: formData.industry,
-      complexity: formData.complexity,
-      components: formData.components?.sort()
+      components: formData.components?.sort(),
     }
-    
+
     return this.hashObject(keyData)
   }
 
@@ -49,9 +49,9 @@ class DesignSystemCache {
    * Generate a component cache key
    */
   private generateComponentKey(
-    componentName: string, 
-    designSystemHash: string, 
-    variant?: string, 
+    componentName: string,
+    designSystemHash: string,
+    variant?: string,
     size?: string
   ): string {
     return `${componentName}-${designSystemHash}-${variant || 'default'}-${size || 'md'}`
@@ -65,7 +65,7 @@ class DesignSystemCache {
     let hash = 0
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i)
-      hash = ((hash << 5) - hash) + char
+      hash = (hash << 5) - hash + char
       hash = hash & hash // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(36)
@@ -74,12 +74,14 @@ class DesignSystemCache {
   /**
    * Get cached design system
    */
-  getCachedDesignSystem(formData: DesignSystemFormData): DesignSystemConfig | null {
+  getCachedDesignSystem(
+    formData: DesignSystemFormData
+  ): DesignSystemConfig | null {
     this.cleanupExpiredEntries()
-    
+
     const key = this.generateCacheKey(formData)
     const entry = this.cache.get(key)
-    
+
     if (!entry) {
       return null
     }
@@ -93,7 +95,7 @@ class DesignSystemCache {
     // Update access statistics
     entry.accessCount++
     entry.lastAccessed = Date.now()
-    
+
     return entry.data
   }
 
@@ -101,17 +103,17 @@ class DesignSystemCache {
    * Cache a generated design system
    */
   cacheDesignSystem(
-    formData: DesignSystemFormData, 
+    formData: DesignSystemFormData,
     designSystem: DesignSystemConfig,
     ttl?: number
   ): void {
     this.cleanupExpiredEntries()
     this.enforceMaxCacheSize()
-    
+
     const key = this.generateCacheKey(formData)
     const now = Date.now()
     const expiration = now + (ttl || this.defaultTTL)
-    
+
     const entry: DesignSystemCacheEntry = {
       data: designSystem,
       timestamp: now,
@@ -119,9 +121,9 @@ class DesignSystemCache {
       accessCount: 1,
       lastAccessed: now,
       formDataHash: key,
-      componentCache: new Map()
+      componentCache: new Map(),
     }
-    
+
     this.cache.set(key, entry)
   }
 
@@ -134,9 +136,14 @@ class DesignSystemCache {
     variant?: string,
     size?: string
   ): GeneratedComponent | null {
-    const key = this.generateComponentKey(componentName, designSystemHash, variant, size)
+    const key = this.generateComponentKey(
+      componentName,
+      designSystemHash,
+      variant,
+      size
+    )
     const entry = this.componentCache.get(key)
-    
+
     if (!entry) {
       return null
     }
@@ -150,7 +157,7 @@ class DesignSystemCache {
     // Update access statistics
     entry.accessCount++
     entry.lastAccessed = Date.now()
-    
+
     return entry.data
   }
 
@@ -166,19 +173,24 @@ class DesignSystemCache {
     ttl?: number
   ): void {
     this.enforceMaxComponentCacheSize()
-    
-    const key = this.generateComponentKey(componentName, designSystemHash, variant, size)
+
+    const key = this.generateComponentKey(
+      componentName,
+      designSystemHash,
+      variant,
+      size
+    )
     const now = Date.now()
     const expiration = now + (ttl || this.defaultTTL)
-    
+
     const entry: CacheEntry<GeneratedComponent> = {
       data: component,
       timestamp: now,
       expiresAt: expiration,
       accessCount: 1,
-      lastAccessed: now
+      lastAccessed: now,
     }
-    
+
     this.componentCache.set(key, entry)
   }
 
@@ -191,7 +203,9 @@ class DesignSystemCache {
   ): Promise<void> {
     // This would typically trigger background generation
     // For now, we'll just mark these as priority
-    console.log(`Preloading components: ${components.join(', ')} for design system: ${designSystemHash}`)
+    console.log(
+      `Preloading components: ${components.join(', ')} for design system: ${designSystemHash}`
+    )
   }
 
   /**
@@ -202,7 +216,7 @@ class DesignSystemCache {
     let validEntries = 0
     let expiredEntries = 0
     let totalAccessCount = 0
-    
+
     for (const entry of this.cache.values()) {
       if (now > entry.expiresAt) {
         expiredEntries++
@@ -211,11 +225,11 @@ class DesignSystemCache {
         totalAccessCount += entry.accessCount
       }
     }
-    
+
     let validComponentEntries = 0
     let expiredComponentEntries = 0
     let totalComponentAccessCount = 0
-    
+
     for (const entry of this.componentCache.values()) {
       if (now > entry.expiresAt) {
         expiredComponentEntries++
@@ -224,7 +238,7 @@ class DesignSystemCache {
         totalComponentAccessCount += entry.accessCount
       }
     }
-    
+
     return {
       designSystems: {
         total: this.cache.size,
@@ -232,21 +246,24 @@ class DesignSystemCache {
         expired: expiredEntries,
         totalAccess: totalAccessCount,
         avgAccess: validEntries > 0 ? totalAccessCount / validEntries : 0,
-        hitRate: this.calculateHitRate('designSystems')
+        hitRate: this.calculateHitRate('designSystems'),
       },
       components: {
         total: this.componentCache.size,
         valid: validComponentEntries,
         expired: expiredComponentEntries,
         totalAccess: totalComponentAccessCount,
-        avgAccess: validComponentEntries > 0 ? totalComponentAccessCount / validComponentEntries : 0,
-        hitRate: this.calculateHitRate('components')
+        avgAccess:
+          validComponentEntries > 0
+            ? totalComponentAccessCount / validComponentEntries
+            : 0,
+        hitRate: this.calculateHitRate('components'),
       },
       memory: {
         estimatedSize: this.estimateMemoryUsage(),
         maxDesignSystems: this.maxCacheSize,
-        maxComponents: this.maxComponentCacheSize
-      }
+        maxComponents: this.maxComponentCacheSize,
+      },
     }
   }
 
@@ -257,7 +274,8 @@ class DesignSystemCache {
     // This would typically track hits vs misses over time
     // For now, return a placeholder based on cache size
     const cache = type === 'designSystems' ? this.cache : this.componentCache
-    const maxSize = type === 'designSystems' ? this.maxCacheSize : this.maxComponentCacheSize
+    const maxSize =
+      type === 'designSystems' ? this.maxCacheSize : this.maxComponentCacheSize
     return Math.min(cache.size / maxSize, 1) * 100
   }
 
@@ -267,15 +285,15 @@ class DesignSystemCache {
   private estimateMemoryUsage(): string {
     // Very rough estimation
     let totalSize = 0
-    
+
     for (const entry of this.cache.values()) {
       totalSize += JSON.stringify(entry.data).length
     }
-    
+
     for (const entry of this.componentCache.values()) {
       totalSize += JSON.stringify(entry.data).length
     }
-    
+
     // Convert bytes to readable format
     if (totalSize < 1024) {
       return `${totalSize} B`
@@ -291,14 +309,14 @@ class DesignSystemCache {
    */
   private cleanupExpiredEntries(): void {
     const now = Date.now()
-    
+
     // Clean design system cache
     for (const [key, entry] of this.cache.entries()) {
       if (now > entry.expiresAt) {
         this.cache.delete(key)
       }
     }
-    
+
     // Clean component cache
     for (const [key, entry] of this.componentCache.entries()) {
       if (now > entry.expiresAt) {
@@ -311,20 +329,22 @@ class DesignSystemCache {
    * Enforce maximum cache size using LRU eviction
    */
   private enforceMaxCacheSize(): void {
-    if (this.cache.size >= this.maxCacheSize) {
+    while (this.cache.size >= this.maxCacheSize) {
       // Find least recently used entry
       let oldestKey = ''
       let oldestTime = Date.now()
-      
+
       for (const [key, entry] of this.cache.entries()) {
         if (entry.lastAccessed < oldestTime) {
           oldestTime = entry.lastAccessed
           oldestKey = key
         }
       }
-      
+
       if (oldestKey) {
         this.cache.delete(oldestKey)
+      } else {
+        break // Safety check to prevent infinite loop
       }
     }
   }
@@ -337,14 +357,14 @@ class DesignSystemCache {
       // Find least recently used entry
       let oldestKey = ''
       let oldestTime = Date.now()
-      
+
       for (const [key, entry] of this.componentCache.entries()) {
         if (entry.lastAccessed < oldestTime) {
           oldestTime = entry.lastAccessed
           oldestKey = key
         }
       }
-      
+
       if (oldestKey) {
         this.componentCache.delete(oldestKey)
       }
@@ -378,7 +398,8 @@ class DesignSystemCache {
     maxTTL?: number
   }): void {
     if (options.maxCacheSize) this.maxCacheSize = options.maxCacheSize
-    if (options.maxComponentCacheSize) this.maxComponentCacheSize = options.maxComponentCacheSize
+    if (options.maxComponentCacheSize)
+      this.maxComponentCacheSize = options.maxComponentCacheSize
     if (options.defaultTTL) this.defaultTTL = options.defaultTTL
     if (options.maxTTL) this.maxTTL = options.maxTTL
   }
@@ -388,11 +409,11 @@ class DesignSystemCache {
 export const designSystemCache = new DesignSystemCache()
 
 // Utility functions for easy access
-export const getCachedDesignSystem = (formData: DesignSystemFormData) => 
+export const getCachedDesignSystem = (formData: DesignSystemFormData) =>
   designSystemCache.getCachedDesignSystem(formData)
 
 export const cacheDesignSystem = (
-  formData: DesignSystemFormData, 
+  formData: DesignSystemFormData,
   designSystem: DesignSystemConfig,
   ttl?: number
 ) => designSystemCache.cacheDesignSystem(formData, designSystem, ttl)
@@ -402,7 +423,13 @@ export const getCachedComponent = (
   designSystemHash: string,
   variant?: string,
   size?: string
-) => designSystemCache.getCachedComponent(componentName, designSystemHash, variant, size)
+) =>
+  designSystemCache.getCachedComponent(
+    componentName,
+    designSystemHash,
+    variant,
+    size
+  )
 
 export const cacheComponent = (
   componentName: string,
@@ -411,4 +438,12 @@ export const cacheComponent = (
   variant?: string,
   size?: string,
   ttl?: number
-) => designSystemCache.cacheComponent(componentName, designSystemHash, component, variant, size, ttl)
+) =>
+  designSystemCache.cacheComponent(
+    componentName,
+    designSystemHash,
+    component,
+    variant,
+    size,
+    ttl
+  )

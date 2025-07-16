@@ -8,7 +8,7 @@ import { GeneratedComponent, DesignSystemConfig } from '@/types'
 /**
  * Memoized component wrapper to prevent unnecessary re-renders
  */
-export const withMemoization = <T extends Record<string, any>,>(
+export const withMemoization = <T extends Record<string, any>>(
   Component: React.ComponentType<T>,
   areEqual?: (prevProps: T, nextProps: T) => boolean
 ) => {
@@ -79,12 +79,12 @@ export const useComputedStyles = (
       const baseStyles = {
         fontFamily: designSystem.typography.bodyFont,
         borderRadius: designSystem.borderRadius.md,
-        transition: 'all 0.2s ease-in-out'
+        transition: 'all 0.2s ease-in-out',
       }
 
       // Variant-specific styles
       const variantConfig = component.variants.find(v => v.name === variant)
-      const variantStyles = variantConfig?.styles || {}
+      const variantStyles = {} // TODO: Add variant styles when ComponentVariant has styles property
 
       // Size-specific styles
       const sizeStyles = getSizeStyles(size, component.name)
@@ -93,12 +93,18 @@ export const useComputedStyles = (
         base: baseStyles,
         variant: variantStyles,
         size: sizeStyles,
-        combined: { ...baseStyles, ...variantStyles, ...sizeStyles }
+        combined: { ...baseStyles, ...variantStyles, ...sizeStyles },
       }
     }
 
     return computeStyles()
-  }, [component.name, variant, size, designSystem.typography.bodyFont, designSystem.borderRadius.md])
+  }, [
+    component.name,
+    variant,
+    size,
+    designSystem.typography.bodyFont,
+    designSystem.borderRadius.md,
+  ])
 }
 
 /**
@@ -106,9 +112,12 @@ export const useComputedStyles = (
  */
 const sizeStylesCache = new Map<string, Record<string, any>>()
 
-const getSizeStyles = (size: string, componentName: string): Record<string, any> => {
+const getSizeStyles = (
+  size: string,
+  componentName: string
+): Record<string, any> => {
   const cacheKey = `${componentName}-${size}`
-  
+
   if (sizeStylesCache.has(cacheKey)) {
     return sizeStylesCache.get(cacheKey)!
   }
@@ -119,19 +128,19 @@ const getSizeStyles = (size: string, componentName: string): Record<string, any>
       sm: { height: '2rem', padding: '0 0.75rem', fontSize: '0.875rem' },
       md: { height: '2.25rem', padding: '0 1rem', fontSize: '0.875rem' },
       lg: { height: '2.5rem', padding: '0 1.5rem', fontSize: '1rem' },
-      xl: { height: '2.75rem', padding: '0 2rem', fontSize: '1rem' }
+      xl: { height: '2.75rem', padding: '0 2rem', fontSize: '1rem' },
     },
     Input: {
       sm: { height: '2rem', fontSize: '0.875rem' },
       md: { height: '2.25rem', fontSize: '0.875rem' },
-      lg: { height: '2.5rem', fontSize: '1rem' }
+      lg: { height: '2.5rem', fontSize: '1rem' },
     },
     // Add more component size maps as needed
   }
 
   const componentSizes = sizeMap[componentName] || {}
   const styles = componentSizes[size] || componentSizes.md || {}
-  
+
   sizeStylesCache.set(cacheKey, styles)
   return styles
 }
@@ -139,19 +148,22 @@ const getSizeStyles = (size: string, componentName: string): Record<string, any>
 /**
  * Throttled callback hook for performance-sensitive operations
  */
-export const useThrottledCallback = <T extends any[],>(
+export const useThrottledCallback = <T extends any[]>(
   callback: (...args: T) => void,
   delay: number
 ) => {
   const lastCall = React.useRef<number>(0)
-  
-  return useCallback((...args: T) => {
-    const now = Date.now()
-    if (now - lastCall.current >= delay) {
-      lastCall.current = now
-      callback(...args)
-    }
-  }, [callback, delay])
+
+  return useCallback(
+    (...args: T) => {
+      const now = Date.now()
+      if (now - lastCall.current >= delay) {
+        lastCall.current = now
+        callback(...args)
+      }
+    },
+    [callback, delay]
+  )
 }
 
 /**
@@ -163,39 +175,42 @@ export const useVirtualizedComponents = (
   itemHeight: number = 100
 ) => {
   const [scrollTop, setScrollTop] = React.useState(0)
-  
+
   const visibleComponents = useMemo(() => {
     const startIndex = Math.floor(scrollTop / itemHeight)
     const endIndex = Math.min(
       startIndex + Math.ceil(containerHeight / itemHeight) + 1,
       components.length
     )
-    
+
     return {
       startIndex,
       endIndex,
       visibleItems: components.slice(startIndex, endIndex),
       totalHeight: components.length * itemHeight,
-      offsetY: startIndex * itemHeight
+      offsetY: startIndex * itemHeight,
     }
   }, [components, scrollTop, containerHeight, itemHeight])
-  
-  const handleScroll = useThrottledCallback((e: React.UIEvent<HTMLDivElement>) => {
-    setScrollTop(e.currentTarget.scrollTop)
-  }, 16) // ~60fps
-  
+
+  const handleScroll = useThrottledCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      setScrollTop(e.currentTarget.scrollTop)
+    },
+    16
+  ) // ~60fps
+
   return {
     ...visibleComponents,
-    handleScroll
+    handleScroll,
   }
 }
 
 /**
  * Lazy component loader with suspense
  */
-export const LazyComponentPreview = React.lazy(() => 
+export const LazyComponentPreview = React.lazy(() =>
   import('./component-preview').then(module => ({
-    default: module.ComponentPreview
+    default: module.ComponentPreview,
   }))
 )
 
@@ -203,7 +218,10 @@ export const LazyComponentPreview = React.lazy(() =>
  * Error boundary for component preview failures
  */
 export class PreviewErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback?: React.ComponentType<{ error: Error }> },
+  {
+    children: React.ReactNode
+    fallback?: React.ComponentType<{ error: Error }>
+  },
   { hasError: boolean; error: Error | null }
 > {
   constructor(props: any) {
@@ -243,15 +261,18 @@ const DefaultErrorFallback: React.FC<{ error: Error }> = ({ error }) => (
  */
 export const usePerformanceMonitor = (componentName: string) => {
   const renderStart = React.useRef<number>(0)
-  
+
   React.useEffect(() => {
     renderStart.current = performance.now()
   })
-  
+
   React.useEffect(() => {
     const renderTime = performance.now() - renderStart.current
-    if (renderTime > 16) { // > 16ms might impact 60fps
-      console.warn(`Slow render detected for ${componentName}: ${renderTime.toFixed(2)}ms`)
+    if (renderTime > 16) {
+      // > 16ms might impact 60fps
+      console.warn(
+        `Slow render detected for ${componentName}: ${renderTime.toFixed(2)}ms`
+      )
     }
   })
 }

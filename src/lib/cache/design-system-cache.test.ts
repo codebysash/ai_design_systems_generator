@@ -1,9 +1,9 @@
-import { 
+import {
   designSystemCache,
   getCachedDesignSystem,
   cacheDesignSystem,
   getCachedComponent,
-  cacheComponent
+  cacheComponent,
 } from './design-system-cache'
 import { DesignSystemFormData } from '@/lib/validations'
 import { DesignSystemConfig, GeneratedComponent } from '@/types'
@@ -12,15 +12,17 @@ describe('Design System Cache', () => {
   beforeEach(() => {
     // Clear cache before each test
     designSystemCache.clearCache()
+    // Reset cache configuration to defaults
+    designSystemCache.configure({ maxCacheSize: 50 })
   })
 
   const mockFormData: DesignSystemFormData = {
+    name: 'E-commerce Design System',
     description: 'Modern e-commerce design system',
     style: 'modern',
-    colors: ['#3B82F6', '#8B5CF6'],
+    primaryColor: '#3B82F6',
     industry: 'e-commerce',
-    complexity: 'medium',
-    components: ['Button', 'Input', 'Card']
+    components: ['Button', 'Input', 'Card'],
   }
 
   const mockDesignSystem: DesignSystemConfig = {
@@ -30,23 +32,23 @@ describe('Design System Cache', () => {
       primary: {
         '50': '#eff6ff',
         '500': '#3b82f6',
-        '900': '#1e3a8a'
-      }
+        '900': '#1e3a8a',
+      },
     },
     typography: {
       headingFont: 'Inter',
       bodyFont: 'Inter',
       scale: {
         base: '1rem',
-        lg: '1.125rem'
-      }
+        lg: '1.125rem',
+      },
     },
     spacing: {
-      md: '1rem'
+      md: '1rem',
     },
     borderRadius: {
-      md: '0.375rem'
-    }
+      md: '0.375rem',
+    },
   }
 
   const mockComponent: GeneratedComponent = {
@@ -55,16 +57,26 @@ describe('Design System Cache', () => {
     type: 'button',
     variants: [
       { name: 'primary', description: 'Primary button style' },
-      { name: 'secondary', description: 'Secondary button style' }
+      { name: 'secondary', description: 'Secondary button style' },
     ],
     sizes: ['sm', 'md', 'lg'],
     props: [
-      { name: 'onClick', type: 'function', required: false, description: 'Click handler' },
-      { name: 'disabled', type: 'boolean', required: false, description: 'Disabled state' }
+      {
+        name: 'onClick',
+        type: 'function',
+        required: false,
+        description: 'Click handler',
+      },
+      {
+        name: 'disabled',
+        type: 'boolean',
+        required: false,
+        description: 'Disabled state',
+      },
     ],
     code: 'export const Button = () => <button>Click me</button>',
     styles: '.button { padding: 1rem; }',
-    accessibility: ['Keyboard navigable', 'Screen reader friendly']
+    accessibility: ['Keyboard navigable', 'Screen reader friendly'],
   }
 
   describe('Design System Caching', () => {
@@ -83,7 +95,7 @@ describe('Design System Cache', () => {
     it('should return null for non-existent cache entries', () => {
       const differentFormData: DesignSystemFormData = {
         ...mockFormData,
-        description: 'Different description'
+        description: 'Different description',
       }
 
       const result = getCachedDesignSystem(differentFormData)
@@ -139,27 +151,44 @@ describe('Design System Cache', () => {
       cacheComponent('Button', designSystemHash, mockComponent, 'primary', 'lg')
 
       // Should return component for exact match
-      expect(getCachedComponent('Button', designSystemHash, 'primary', 'lg')).toEqual(mockComponent)
+      expect(
+        getCachedComponent('Button', designSystemHash, 'primary', 'lg')
+      ).toEqual(mockComponent)
 
       // Should return null for different variant/size
-      expect(getCachedComponent('Button', designSystemHash, 'secondary', 'lg')).toBeNull()
-      expect(getCachedComponent('Button', designSystemHash, 'primary', 'sm')).toBeNull()
+      expect(
+        getCachedComponent('Button', designSystemHash, 'secondary', 'lg')
+      ).toBeNull()
+      expect(
+        getCachedComponent('Button', designSystemHash, 'primary', 'sm')
+      ).toBeNull()
     })
 
     it('should handle component expiration', async () => {
       const designSystemHash = 'test-hash'
       const shortTTL = 100
 
-      cacheComponent('Button', designSystemHash, mockComponent, 'primary', 'md', shortTTL)
+      cacheComponent(
+        'Button',
+        designSystemHash,
+        mockComponent,
+        'primary',
+        'md',
+        shortTTL
+      )
 
       // Should be available immediately
-      expect(getCachedComponent('Button', designSystemHash, 'primary', 'md')).toEqual(mockComponent)
+      expect(
+        getCachedComponent('Button', designSystemHash, 'primary', 'md')
+      ).toEqual(mockComponent)
 
       // Wait for expiration
       await new Promise(resolve => setTimeout(resolve, 150))
 
       // Should now be expired
-      expect(getCachedComponent('Button', designSystemHash, 'primary', 'md')).toBeNull()
+      expect(
+        getCachedComponent('Button', designSystemHash, 'primary', 'md')
+      ).toBeNull()
     })
   })
 
@@ -247,7 +276,7 @@ describe('Design System Cache', () => {
       const newConfig = {
         maxCacheSize: 100,
         maxComponentCacheSize: 500,
-        defaultTTL: 60000
+        defaultTTL: 60000,
       }
 
       designSystemCache.configure(newConfig)
@@ -280,13 +309,13 @@ describe('Design System Cache', () => {
     })
 
     it('should handle order-independent hashing for arrays', () => {
-      const formData1 = { 
-        ...mockFormData, 
-        components: ['Button', 'Input', 'Card'] 
+      const formData1 = {
+        ...mockFormData,
+        components: ['Button', 'Input', 'Card'],
       }
-      const formData2 = { 
-        ...mockFormData, 
-        components: ['Card', 'Button', 'Input'] 
+      const formData2 = {
+        ...mockFormData,
+        components: ['Card', 'Button', 'Input'],
       }
 
       cacheDesignSystem(formData1, mockDesignSystem)
@@ -309,13 +338,13 @@ describe('Design System Cache', () => {
       // Create large mock data
       const largeDesignSystem = {
         ...mockDesignSystem,
-        colors: {}
+        colors: {},
       }
 
       // Add many color variations
       for (let i = 0; i < 100; i++) {
         largeDesignSystem.colors[`color${i}`] = {
-          '500': `#${i.toString(16).padStart(6, '0')}`
+          '500': `#${i.toString(16).padStart(6, '0')}`,
         }
       }
 
